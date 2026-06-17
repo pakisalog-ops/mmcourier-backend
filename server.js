@@ -7,10 +7,15 @@ const port = process.env.PORT || 3000;
 // Middleware to parse incoming JSON fields (for booking forms)
 app.use(express.json());
 
-// Connect to Supabase using the secure environment variable we will set up on Render
+// Connect to Supabase using the connection pooler string
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false } // Required for secure cloud-to-cloud connections
+  ssl: {
+    rejectUnauthorized: false
+  },
+  max: 10, // Maximum number of clients in the pool
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 });
 
 // 1. PUBLIC API: Track a parcel by its waybill number
