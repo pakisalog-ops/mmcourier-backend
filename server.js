@@ -4,21 +4,51 @@ const { Pool } = require('pg');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Middleware to parse incoming JSON fields (for booking forms)
+// 1. MIDDLEWARE
+// Parse incoming JSON payloads (crucial for your booking forms)
 app.use(express.json());
 
-// Connect to Supabase using the connection pooler string
+// Simple CORS middleware so your frontend web host can fetch data from this Render API
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
+// 2. DATABASE CONNECTION CONFIGURATION
+// Dynamically converts port 6543 to the standard, stable session port 5432.
+// Also replaces the placeholder text with your actual database password if it wasn't edited on Render.
+const cleanConnectionString = process.env.DATABASE_URL
+  ? process.env.DATABASE_URL.replace(':6543/', ':5432/').replace('[YOUR-PASSWORD]', 'MMCourierSecure2026')
+  : '';
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: cleanConnectionString,
   ssl: {
     rejectUnauthorized: false
   },
-  max: 10, // Maximum number of clients in the pool
+  max: 10, 
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 5000,
 });
 
-// 1. PUBLIC API: Track a parcel by its waybill number
+// Catch background database pool connection crashes gracefully
+pool.on('error', (err) => {
+  console.error('Unexpected database pool connection error:', err.message);
+});
+
+// 3. API ENDPOINTS
+
+// public check to see if the server is up and responsive
+app.get('/', (req, res) => {
+  res.json({ message: "MM Courier Services API is live and operational." });
+});
+
+// PUBLIC API: Track a parcel by its unique South African waybill number
 app.get('/api/v1/track/:waybill', async (req, res) => {
   const { waybill } = req.params;
   try {
@@ -36,11 +66,12 @@ app.get('/api/v1/track/:waybill', async (req, res) => {
     }
     res.json({ success: true, tracking_history: result.rows });
   } catch (err) {
+    console.error('Tracking Error Details:', err.message);
     res.status(500).json({ error: 'Database server error' });
   }
 });
 
-// 2. BACKEND API: Create a new shipment booking from the frontend form
+// BACKEND API: Create a new shipment booking via the frontend wizard form
 app.post('/api/v1/shipments/create', async (req, res) => {
   const { sender_details, receiver_details, weight_kg, service_type } = req.body;
   try {
@@ -52,10 +83,12 @@ app.post('/api/v1/shipments/create', async (req, res) => {
     );
     res.status(201).json({ success: true, shipment: result.rows[0] });
   } catch (err) {
+    console.error('Booking Error Details:', err.message);
     res.status(500).json({ error: 'Failed to generate shipment booking' });
   }
 });
 
+// 4. START SERVER
 app.listen(port, () => {
   console.log(`MM Courier backend listening live on port ${port}`);
 });
