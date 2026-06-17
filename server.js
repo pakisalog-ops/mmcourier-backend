@@ -23,7 +23,7 @@ app.use((req, res, next) => {
 // Dynamically converts port 6543 to the standard, stable session port 5432.
 // Also replaces the placeholder text with your actual database password if it wasn't edited on Render.
 const cleanConnectionString = process.env.DATABASE_URL
-  ? process.env.DATABASE_URL.replace(':6543/', ':5432/').replace('[YOUR-PASSWORD]', 'MMCourierSecure2026')
+  ? process.env.DATABASE_URL.replace(':6543/', ':5432/').replace('[YOUR-PASSWORD]', 'Pakisapke2026')
   : '';
 
 const pool = new Pool({
