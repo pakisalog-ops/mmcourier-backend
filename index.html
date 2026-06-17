@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MM Courier Services | Reliable Freight & Logistics South Africa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0A192F; /* Deep Navy Blue */
+            --secondary: #5C6B73; /* Slate Grey */
+            --bg-light: #F8F9FA;
+            --text-dark: #333333;
+        }
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            margin: 0; padding: 0; color: var(--text-dark); background: #FFFFFF;
+        }
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px 5%; background: var(--primary); color: white;
+        }
+        .logo { font-weight: 700; font-size: 1.2rem; letter-spacing: 0.5px; }
+        .nav-links a { color: #E0E0E0; text-decoration: none; margin-left: 20px; font-size: 0.9rem; }
+        
+        .container { max-width: 1100px; margin: 0 auto; padding: 40px 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 20px; }
+        @media(max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+
+        .card { background: var(--bg-light); border: 1px solid #E0E0E0; padding: 30px; border-radius: 4px; }
+        h2 { color: var(--primary); margin-top: 0; font-size: 1.5rem; border-bottom: 2px solid #E0E0E0; padding-bottom: 10px; }
+        
+        label { display: block; margin: 12px 0 6px; font-weight: 600; font-size: 0.85rem; }
+        input, select, textarea { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #CCCCCC; border-radius: 4px; font-family: inherit; }
+        
+        button { background: var(--primary); color: white; border: none; padding: 12px 24px; font-weight: 600; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 15px; font-size: 0.95rem; }
+        button:hover { background: #112240; }
+        
+        .status-box { margin-top: 15px; padding: 15px; border-left: 4px solid var(--secondary); background: #EEEEEE; font-size: 0.9rem; white-space: pre-line; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">MM COURIER SERVICES</div>
+        <div class="nav-links">
+            <a href="#">Home</a>
+            <a href="#">Services</a>
+            <a href="#">Contact</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <p style="text-align: center; color: var(--secondary); font-weight: 600;">Portfolio Live Prototype (No-Server Architecture)</p>
+        
+        <div class="grid">
+            <div class="card">
+                <h2>Track Your Shipment</h2>
+                <p style="font-size:0.85rem; color: var(--secondary)">Enter your waybill to query real-time transit steps.</p>
+                <label for="waybillInput">Waybill / Tracking Number</label>
+                <input type="text" id="waybillInput" placeholder="e.g., MM2610001">
+                <button id="trackBtn">Track Parcel</button>
+                <div id="trackingResult" class="status-box" style="display:none;"></div>
+            </div>
+
+            <div class="card">
+                <h2>Book a New Collection</h2>
+                <p style="font-size:0.85rem; color: var(--secondary)">Simulate a live B2B logistics manifest generation.</p>
+                
+                <label for="senderAddr">Collection Address (Sender)</label>
+                <input type="text" id="senderAddr" placeholder="Street, Suburb, Postal Code">
+
+                <label for="receiverAddr">Delivery Destination (Receiver)</label>
+                <input type="text" id="receiverAddr" placeholder="Street, Suburb, Postal Code">
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div>
+                        <label for="weight">Weight (kg)</label>
+                        <input type="number" id="weight" value="5">
+                    </div>
+                    <div>
+                        <label for="service">Service Type</label>
+                        <select id="service">
+                            <option value="economy_road">Economy Road Freight</option>
+                            <option value="overnight">Overnight Express</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button id="bookBtn">Generate Waybill & Book</button>
+                <div id="bookingResult" class="status-box" style="display:none; border-left-color: #2ec4b6;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // 🛠️ PASTE YOUR FIREBASE CONFIG OBJECT HERE
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase & Database
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // ==========================================
+        // LOGIC 1: LIVE TRACKING LOOKUP
+        // ==========================================
+        document.getElementById('trackBtn').addEventListener('click', async () => {
+            const waybill = document.getElementById('waybillInput').value.trim().toUpperCase();
+            const resultBox = document.getElementById('trackingResult');
+            
+            if(!waybill) return alert("Please enter a waybill number");
+            
+            resultBox.style.display = "block";
+            resultBox.innerText = "Searching ledger details...";
+
+            try {
+                const docRef = doc(db, "shipments", waybill);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    resultBox.innerHTML = `<strong>Current Status:</strong> ${data.current_status.toUpperCase()}<br><br>` + 
+                                          `<strong>Route:</strong> ${data.sender_address} ➡️ ${data.receiver_address}<br>` +
+                                          `<strong>Service:</strong> ${data.service_type.replace('_', ' ')}`;
+                } else {
+                    resultBox.innerText = "Error: Waybill number not found in our database.";
+                }
+            } catch (error) {
+                resultBox.innerText = "Connection error: " + error.message;
+            }
+        });
+
+        // ==========================================
+        // LOGIC 2: LIVE BOOKING GENERATOR
+        // ==========================================
+        document.getElementById('bookBtn').addEventListener('click', async () => {
+            const sender = document.getElementById('senderAddr').value.trim();
+            const receiver = document.getElementById('receiverAddr').value.trim();
+            const weight = document.getElementById('weight').value;
+            const service = document.getElementById('service').value;
+            const resultBox = document.getElementById('bookingResult');
+
+            if(!sender || !receiver) return alert("Please fill out route details");
+
+            resultBox.style.display = "block";
+            resultBox.innerText = "Manifesting logistics data...";
+
+            // Create an authentic custom South African sequential waybill token 
+            const dynamicWaybill = "MM26" + Math.floor(10000 + Math.random() * 90000);
+
+            try {
+                await setDoc(doc(db, "shipments", dynamicWaybill), {
+                    sender_address: sender,
+                    receiver_address: receiver,
+                    weight_kg: Number(weight),
+                    service_type: service,
+                    current_status: "manifested",
+                    created_at: new Date().toISOString()
+                });
+
+                resultBox.innerHTML = `🎉 <strong>Booking Confirmed Successfully!</strong><br><br>` +
+                                      `<strong>Generated Waybill:</strong> ${dynamicWaybill}<br>` +
+                                      `Copy this number and try it in the tracking box!`;
+            } catch (error) {
+                resultBox.innerText = "Booking failed: " + error.message;
+            }
+        });
+    </script>
+</body>
+</html>
