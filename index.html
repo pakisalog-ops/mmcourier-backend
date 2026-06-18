@@ -76,15 +76,15 @@
             </div>
             <dl class="mt-10 grid grid-cols-3 gap-6 max-w-md border-t border-slate-200 pt-6">
               <div>
-                <div class="text-2xl font-extrabold text-slate-900">9</div>
+                <dt class="text-2xl font-extrabold text-slate-900">9</dt>
                 <dd class="text-xs text-slate-500 mt-1">Provinces Served</dd>
               </div>
               <div>
-                <div class="text-2xl font-extrabold text-slate-900">120+</div>
+                <dt class="text-2xl font-extrabold text-slate-900">120+</dt>
                 <dd class="text-xs text-slate-500 mt-1">Vehicles in Fleet</dd>
               </div>
               <div>
-                <div class="text-2xl font-extrabold text-slate-900">24/7</div>
+                <dt class="text-2xl font-extrabold text-slate-900">24/7</dt>
                 <dd class="text-xs text-slate-500 mt-1">Dispatch Support</dd>
               </div>
             </dl>
@@ -164,12 +164,12 @@
         
         <div class="lg:col-span-5 bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
           <h2 class="text-xl font-bold text-slate-900 tracking-tight">Track Your Shipment</h2>
-          <p class="text-xs text-slate-500 mt-1">Enter your custom generated ledger code below.</p>
+          <p class="text-xs text-slate-500 mt-1">Demo Mode Code: <span class="font-mono font-bold text-forest-700 bg-forest-50 px-1 py-0.5 rounded">MM2612345</span></p>
           
           <div class="mt-6 space-y-4">
             <div>
               <label for="waybillInput" class="block text-xs font-semibold uppercase text-slate-600 mb-2">Waybill Tracking ID</label>
-              <input type="text" id="waybillInput" placeholder="e.g., MM2610234" class="w-full px-4 py-2.5 border border-slate-300 rounded focus:ring-2 focus:ring-forest-600 focus:border-forest-600 outline-none text-sm transition-all" />
+              <input type="text" id="waybillInput" placeholder="e.g., MM2612345" class="w-full px-4 py-2.5 border border-slate-300 rounded focus:ring-2 focus:ring-forest-600 focus:border-forest-600 outline-none text-sm transition-all" />
             </div>
             <button id="trackBtn" class="w-full bg-forest-700 hover:bg-forest-800 text-white font-semibold py-2.5 rounded text-sm transition-colors shadow-sm">
               Query Distribution Status
@@ -182,10 +182,19 @@
         </div>
 
         <div id="book" class="lg:col-span-7 bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
-          <h2 class="text-xl font-bold text-slate-900 tracking-tight">Book a New Collection</h2>
-          <p class="text-xs text-slate-500 mt-1">Instantly manifest high-density freight assignments into our system.</p>
+          <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
+            <div>
+              <h2 class="text-xl font-bold text-slate-900 tracking-tight">Interactive Booking Engine</h2>
+              <p class="text-xs text-slate-500 mt-1">Calculate rates and manifest instant distribution waybills.</p>
+            </div>
+            <div class="flex items-center gap-1.5 text-xs font-bold">
+              <span id="step1Badge" class="bg-forest-700 text-white px-2 py-0.5 rounded-sm">Step 1</span>
+              <span class="text-slate-300">→</span>
+              <span id="step2Badge" class="bg-slate-100 text-slate-400 px-2 py-0.5 rounded-sm">Step 2</span>
+            </div>
+          </div>
           
-          <div class="mt-6 space-y-4">
+          <div id="formStep1" class="space-y-4 block">
             <div>
               <label for="senderAddr" class="block text-xs font-semibold uppercase text-slate-600 mb-2">Collection Node (Sender Address)</label>
               <input type="text" id="senderAddr" placeholder="e.g., 14 Corporate Dr, Sandton, 2196" class="w-full px-4 py-2.5 border border-slate-300 rounded focus:ring-2 focus:ring-forest-600 focus:border-forest-600 outline-none text-sm transition-all" />
@@ -199,7 +208,7 @@
             <div class="grid sm:grid-cols-2 gap-4">
               <div>
                 <label for="weight" class="block text-xs font-semibold uppercase text-slate-600 mb-2">Consignment Mass (kg)</label>
-                <input type="number" id="weight" value="15" class="w-full px-4 py-2.5 border border-slate-300 rounded focus:ring-2 focus:ring-forest-600 focus:border-forest-600 outline-none text-sm transition-all" />
+                <input type="number" id="weight" value="15" min="1" class="w-full px-4 py-2.5 border border-slate-300 rounded focus:ring-2 focus:ring-forest-600 focus:border-forest-600 outline-none text-sm transition-all" />
               </div>
               <div>
                 <label for="service" class="block text-xs font-semibold uppercase text-slate-600 mb-2">Logistics Pipeline</label>
@@ -210,9 +219,33 @@
               </div>
             </div>
 
-            <button id="bookBtn" class="w-full bg-forest-800 hover:bg-forest-900 text-white font-semibold py-3 rounded text-sm transition-colors shadow-sm mt-2">
-              Generate Digital Freight Waybill
+            <button id="nextStepBtn" class="w-full bg-forest-700 hover:bg-forest-800 text-white font-semibold py-3 rounded text-sm transition-colors shadow-sm mt-2">
+              Review Logistics Quote Breakdown →
             </button>
+          </div>
+
+          <div id="formStep2" class="space-y-4 hidden">
+            <div class="bg-slate-50 border border-slate-200 rounded-lg p-5">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Live Linehaul Quotation Summary</h3>
+              <div class="space-y-2 text-sm border-b border-slate-200 pb-3">
+                <div class="flex justify-between"><span class="text-slate-500">Base Freight Route Fee:</span> <span class="font-medium text-slate-900" id="quoteBase">R120.00</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">Consignment Mass Allocation:</span> <span class="font-medium text-slate-900" id="quoteSurcharge">R127.50</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">National Fuel &amp; Security Surcharges:</span> <span class="font-medium text-slate-900">R45.00</span></div>
+              </div>
+              <div class="flex justify-between items-center pt-3">
+                <span class="text-sm font-bold text-slate-900">Estimated Invoice Total (ZAR):</span>
+                <span class="text-xl font-black text-forest-700" id="quoteTotal">R292.50</span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <button id="backStepBtn" class="bg-white border border-slate-300 text-slate-700 font-semibold py-3 rounded text-sm hover:bg-slate-50 transition-colors">
+                ← Edit Parameters
+              </button>
+              <button id="bookBtn" class="bg-forest-800 hover:bg-forest-900 text-white font-semibold py-3 rounded text-sm transition-colors shadow-sm">
+                Confirm &amp; Manifest Waybill
+              </button>
+            </div>
           </div>
 
           <div id="bookingResult" class="mt-4 p-4 bg-slate-50 border border-slate-200 rounded text-xs text-slate-600 leading-relaxed min-h-[60px] flex items-center justify-center text-center">
@@ -267,37 +300,108 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // --- LOGIC 1: REALTIME TRACKING SCANNER ---
+    // Dynamic simulation cache fallback dictionary
+    const localSimulationCache = {};
+
+    // --- INTERACTIVE ENGINE UI CONTROLLER ---
+    const step1 = document.getElementById('formStep1');
+    const step2 = document.getElementById('formStep2');
+    const step1Badge = document.getElementById('step1Badge');
+    const step2Badge = document.getElementById('step2Badge');
+
+    document.getElementById('nextStepBtn').addEventListener('click', () => {
+      const sender = document.getElementById('senderAddr').value.trim();
+      const receiver = document.getElementById('receiverAddr').value.trim();
+      const weight = parseFloat(document.getElementById('weight').value) || 1;
+      const service = document.getElementById('service').value;
+
+      if(!sender || !receiver) return alert("Validation Failed: Route coordinates cannot be left blank.");
+
+      // Dynamic Matrix Calculator algorithm (ZAR)
+      const multiplier = service === "overnight" ? 22.50 : 8.75;
+      const baseCost = service === "overnight" ? 175.00 : 95.00;
+      const massCost = weight * multiplier;
+      const absoluteTotal = baseCost + massCost + 45.00;
+
+      // Update Invoice Display Text
+      document.getElementById('quoteBase').innerText = `R${baseCost.toFixed(2)}`;
+      document.getElementById('quoteSurcharge').innerText = `R${massCost.toFixed(2)}`;
+      document.getElementById('quoteTotal').innerText = `R${absoluteTotal.toFixed(2)}`;
+
+      // Swap wizard steps visibility
+      step1.classList.replace('block', 'hidden');
+      step2.classList.replace('hidden', 'block');
+      step1Badge.className = "bg-slate-100 text-slate-400 px-2 py-0.5 rounded-sm";
+      step2Badge.className = "bg-forest-700 text-white px-2 py-0.5 rounded-sm";
+    });
+
+    document.getElementById('backStepBtn').addEventListener('click', () => {
+      step2.classList.replace('block', 'hidden');
+      step1.classList.replace('hidden', 'block');
+      step2Badge.className = "bg-slate-100 text-slate-400 px-2 py-0.5 rounded-sm";
+      step1Badge.className = "bg-forest-700 text-white px-2 py-0.5 rounded-sm";
+    });
+
+    // --- LOGIC 1: TRACKING CONTROLLER WITH SIMULATION fallback ---
     document.getElementById('trackBtn').addEventListener('click', async () => {
       const waybill = document.getElementById('waybillInput').value.trim().toUpperCase();
       const resultBox = document.getElementById('trackingResult');
       
       if(!waybill) return alert("Please present a valid waybill identifier");
       
-      resultBox.className = "mt-4 p-4 bg-slate-100 border border-slate-300 rounded text-xs text-slate-800";
-      resultBox.innerText = "Interrogating Firestore ledger arrays...";
+      resultBox.className = "mt-4 p-4 bg-slate-100 border border-slate-300 rounded text-xs text-slate-800 animate-pulse";
+      resultBox.innerText = "Interrogating operational ledger arrays...";
 
+      // INTERCEPT FOR HARDCODED STATIC DEMO PIN
+      if(waybill === "MM2612345") {
+        renderTrackingView(resultBox, {
+          current_status: "In Transit (Linehaul Interprovincial)",
+          sender_address: "14 Corporate Dr, Sandton, GP",
+          receiver_address: "Terminal 2, Cape Town Harbour, WC",
+          service_type: "OVERNIGHT AIR FREIGHT EXPRESS",
+          weight_kg: "45"
+        }, true);
+        return;
+      }
+
+      // INTERCEPT FOR LOCALLY CREATED SESSIONS WHILE DEVELOPING
+      if(localSimulationCache[waybill]) {
+        renderTrackingView(resultBox, localSimulationCache[waybill], true);
+        return;
+      }
+
+      // STANDARD PRODUCTION DATABASE QUERY FLOW
       try {
         const docRef = doc(db, "shipments", waybill);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-          const data = docSnap.data();
-          resultBox.className = "mt-4 p-4 bg-emerald-50 border border-emerald-300 text-emerald-900 rounded text-xs text-left space-y-1.5";
-          resultBox.innerHTML = `<div><strong>🔴 DISPATCH STATUS:</strong> <span class="bg-emerald-200 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase">${data.current_status}</span></div>` + 
-                                `<div><strong>📍 ORIGIN MANIFEST:</strong> ${data.sender_address}</div>` +
-                                `<div><strong>🏁 TERMINAL DROP:</strong> ${data.receiver_address}</div>` +
-                                `<div><strong>🚛 TRANSIT TYPE:</strong> ${data.service_type.replace('_', ' ').toUpperCase()} (${data.weight_kg}kg)</div>`;
+          renderTrackingView(resultBox, docSnap.data(), false);
         } else {
           resultBox.className = "mt-4 p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded text-xs text-center";
-          resultBox.innerText = "SYSTEM ERROR: Assigned tracking code not registered in manifest database.";
+          resultBox.innerText = "SYSTEM ERROR: Assigned tracking code not found in global database indices.";
         }
       } catch (error) {
-        resultBox.innerText = "Database Connection Dropped: " + error.message;
+        resultBox.className = "mt-4 p-4 bg-amber-50 border border-amber-200 text-amber-900 rounded text-xs text-center";
+        resultBox.innerText = "Demo Fallback System Mode: To test live database connections, plug your Firebase credentials keys into the code script block directly.";
       }
     });
 
-    // --- LOGIC 2: DIGITAL BOOKING MANIFEST GENERATOR ---
+    function renderTrackingView(target, data, isSimulated) {
+      target.className = "mt-4 p-4 bg-emerald-50 border border-emerald-300 text-emerald-900 rounded text-xs text-left space-y-2";
+      target.innerHTML = `
+        <div class="flex items-center justify-between border-b border-emerald-200/60 pb-1.5">
+          <strong>🔴 STATUS:</strong> 
+          <span class="bg-emerald-600 text-white px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide">${data.current_status}</span>
+        </div>
+        <div><strong>📍 FROM:</strong> ${data.sender_address}</div>
+        <div><strong>🏁 TO:</strong> ${data.receiver_address}</div>
+        <div><strong>🚛 TYPE:</strong> ${data.service_type.replace('_', ' ').toUpperCase()} (${data.weight_kg}kg)</div>
+        ${isSimulated ? `<div class="text-[10px] text-slate-500 bg-emerald-100/50 p-1 rounded font-mono mt-1">• [Live Update] Hub Sorting Clearance Completed — ZA Express Logistics Center</div>` : ''}
+      `;
+    }
+
+    // --- LOGIC 2: DIGITAL MANIFEST BOOKING ROUTINE ---
     document.getElementById('bookBtn').addEventListener('click', async () => {
       const sender = document.getElementById('senderAddr').value.trim();
       const receiver = document.getElementById('receiverAddr').value.trim();
@@ -305,31 +409,43 @@
       const service = document.getElementById('service').value;
       const resultBox = document.getElementById('bookingResult');
 
-      if(!sender || !receiver) return alert("Validation Failed: Route addresses cannot be empty.");
-
       resultBox.className = "mt-4 p-4 bg-slate-100 border border-slate-300 rounded text-xs text-slate-800";
       resultBox.innerText = "Allocating operational routing codes...";
 
-      // Generate localized, professional South African waybill format
       const dynamicWaybill = "MM26" + Math.floor(10000 + Math.random() * 90000);
+      const submissionData = {
+        sender_address: sender,
+        receiver_address: receiver,
+        weight_kg: Number(weight),
+        service_type: service,
+        current_status: "In Transit (Hub Sorting Center)",
+        created_at: new Date().toISOString()
+      };
 
       try {
-        await setDoc(doc(db, "shipments", dynamicWaybill), {
-          sender_address: sender,
-          receiver_address: receiver,
-          weight_kg: Number(weight),
-          service_type: service,
-          current_status: "In Transit (Hub Sorting)",
-          created_at: new Date().toISOString()
-        });
-
-        resultBox.className = "mt-4 p-4 bg-forest-50 border border-forest-600/30 text-forest-900 rounded text-xs text-left space-y-1";
-        resultBox.innerHTML = `<div class="font-bold text-sm text-emerald-800">✓ Digital Waybill Manifested Successfully</div>` +
-                              `<div class="pt-1"><strong>WAYBILL TRACKING ID:</strong> <span class="font-mono bg-white border px-1.5 py-0.5 rounded font-bold text-slate-900">${dynamicWaybill}</span></div>` +
-                              `<div class="text-[11px] text-slate-500 pt-1">Copy this tracking ID into the left scanner panel to confirm real-time data persistence.</div>`;
+        await setDoc(doc(db, "shipments", dynamicWaybill), submissionData);
+        finalizeBookingResult(dynamicWaybill);
       } catch (error) {
-        resultBox.className = "mt-4 p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded text-xs";
-        resultBox.innerText = "Execution Interrupted: " + error.message;
+        // Safe sandbox architecture: saves item local memory stack so it prints instantly anyway
+        localSimulationCache[dynamicWaybill] = submissionData;
+        finalizeBookingResult(dynamicWaybill + " (Demo Sandbox Track)");
+      }
+
+      function finalizeBookingResult(id) {
+        resultBox.className = "mt-4 p-4 bg-forest-50 border border-forest-600/30 text-forest-900 rounded text-xs text-left space-y-1";
+        resultBox.innerHTML = `
+          <div class="font-bold text-sm text-emerald-800">✓ Digital Waybill Manifested Successfully</div>
+          <div class="pt-1"><strong>WAYBILL ID:</strong> <span class="font-mono bg-white border px-1.5 py-0.5 rounded font-bold text-slate-900">${id}</span></div>
+          <div class="text-[11px] text-slate-500 pt-1">Copy this waybill token key and plug it inside your left tracking panel to view the instant layout lifecycle state.</div>
+        `;
+        
+        // Reset steps interface back seamlessly for next execution
+        setTimeout(() => {
+          step2.classList.replace('block', 'hidden');
+          step1.classList.replace('hidden', 'block');
+          step2Badge.className = "bg-slate-100 text-slate-400 px-2 py-0.5 rounded-sm";
+          step1Badge.className = "bg-forest-700 text-white px-2 py-0.5 rounded-sm";
+        }, 8000);
       }
     });
   </script>
