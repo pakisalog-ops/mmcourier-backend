@@ -228,13 +228,13 @@
             <div class="bg-slate-50 border border-slate-200 rounded-lg p-5">
               <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Live Linehaul Quotation Summary</h3>
               <div class="space-y-2 text-sm border-b border-slate-200 pb-3">
-                <div class="flex justify-between"><span class="text-slate-500">Base Freight Route Fee:</span> <span class="font-medium text-slate-900" id="quoteBase">R120.00</span></div>
-                <div class="flex justify-between"><span class="text-slate-500">Consignment Mass Allocation:</span> <span class="font-medium text-slate-900" id="quoteSurcharge">R127.50</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">Base Freight Route Fee:</span> <span class="font-medium text-slate-900" id="quoteBase">R95.00</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">Consignment Mass Allocation:</span> <span class="font-medium text-slate-900" id="quoteSurcharge">R131.25</span></div>
                 <div class="flex justify-between"><span class="text-slate-500">National Fuel &amp; Security Surcharges:</span> <span class="font-medium text-slate-900">R45.00</span></div>
               </div>
               <div class="flex justify-between items-center pt-3">
                 <span class="text-sm font-bold text-slate-900">Estimated Invoice Total (ZAR):</span>
-                <span class="text-xl font-black text-forest-700" id="quoteTotal">R292.50</span>
+                <span class="text-xl font-black text-forest-700" id="quoteTotal">R271.25</span>
               </div>
             </div>
 
@@ -286,14 +286,15 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // 🛠️ PLUG YOUR FIREBASE CONFIGURATION CREDENTIALS DIRECTLY HERE:
+    // ✅ PLUGGED IN LIVE PRODUCTION KEYS FOR MMCOURIER PROJECT
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_AUTH_DOMAIN",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_STORAGE_BUCKET",
-      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-      appId: "YOUR_APP_ID"
+      apiKey: "AIzaSyAONBCqsrZLlOuTxP_nFhBevlAaOlLwC_A",
+      authDomain: "mmcourier-e6f30.firebaseapp.com",
+      projectId: "mmcourier-e6f30",
+      storageBucket: "mmcourier-e6f30.firebasestorage.app",
+      messagingSenderId: "757092548797",
+      appId: "1:757092548797:web:f8a48986f3609855d137d4",
+      measurementId: "G-KJ84ZCMBBN"
     };
 
     // Instantiate Database
@@ -342,7 +343,7 @@
       step1Badge.className = "bg-forest-700 text-white px-2 py-0.5 rounded-sm";
     });
 
-    // --- LOGIC 1: TRACKING CONTROLLER WITH SIMULATION fallback ---
+    // --- LOGIC 1: TRACKING CONTROLLER WITH SIMULATION FALLBACK ---
     document.getElementById('trackBtn').addEventListener('click', async () => {
       const waybill = document.getElementById('waybillInput').value.trim().toUpperCase();
       const resultBox = document.getElementById('trackingResult');
@@ -383,7 +384,7 @@
         }
       } catch (error) {
         resultBox.className = "mt-4 p-4 bg-amber-50 border border-amber-200 text-amber-900 rounded text-xs text-center";
-        resultBox.innerText = "Demo Fallback System Mode: To test live database connections, plug your Firebase credentials keys into the code script block directly.";
+        resultBox.innerText = "Connection Note: If Firestore security rules are locked, use 'MM2612345' to view visual layouts.";
       }
     });
 
@@ -424,22 +425,21 @@
 
       try {
         await setDoc(doc(db, "shipments", dynamicWaybill), submissionData);
-        finalizeBookingResult(dynamicWaybill);
+        finalizeBookingResult(dynamicWaybill, false);
       } catch (error) {
-        // Safe sandbox architecture: saves item local memory stack so it prints instantly anyway
+        // Safe sandbox architecture: saves to local cache if Firestore blocks the push
         localSimulationCache[dynamicWaybill] = submissionData;
-        finalizeBookingResult(dynamicWaybill + " (Demo Sandbox Track)");
+        finalizeBookingResult(dynamicWaybill, true);
       }
 
-      function finalizeBookingResult(id) {
+      function finalizeBookingResult(id, isLocalFallback) {
         resultBox.className = "mt-4 p-4 bg-forest-50 border border-forest-600/30 text-forest-900 rounded text-xs text-left space-y-1";
         resultBox.innerHTML = `
           <div class="font-bold text-sm text-emerald-800">✓ Digital Waybill Manifested Successfully</div>
           <div class="pt-1"><strong>WAYBILL ID:</strong> <span class="font-mono bg-white border px-1.5 py-0.5 rounded font-bold text-slate-900">${id}</span></div>
-          <div class="text-[11px] text-slate-500 pt-1">Copy this waybill token key and plug it inside your left tracking panel to view the instant layout lifecycle state.</div>
+          <div class="text-[11px] text-slate-500 pt-1">${isLocalFallback ? 'Saved to local simulation layer.' : 'Committed straight to live Firestore network.'} Copy this waybill and test it in the tracker panel!</div>
         `;
         
-        // Reset steps interface back seamlessly for next execution
         setTimeout(() => {
           step2.classList.replace('block', 'hidden');
           step1.classList.replace('hidden', 'block');
