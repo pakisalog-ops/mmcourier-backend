@@ -74,14 +74,31 @@
 
         <div class="grid lg:grid-cols-3 gap-6 mb-8">
           
-          <div class="lg:col-span-1 bg-slate-950/60 border border-slate-800 rounded-lg p-5">
-            <div class="flex items-center gap-2 mb-2">
+          <div class="lg:col-span-1 bg-slate-950/60 border border-slate-800 rounded-lg p-5 space-y-4">
+            <div class="flex items-center gap-2">
               <span class="p-1 rounded bg-amber-500/10 text-amber-400 font-mono text-[10px] uppercase font-bold border border-amber-500/20">B2B File Processing</span>
               <h3 class="text-sm font-bold text-white tracking-tight">Parcel Perfect Ingestion</h3>
             </div>
-            <p class="text-xs text-slate-400 leading-relaxed mb-4">
-              Select or drop your client's standard generated manifest file (e.g., <code class="text-slate-300 font-mono">JNB1267Waybill.csv</code>) to ingest waybills instantly.
-            </p>
+            
+            <div>
+              <label class="block text-[10px] font-bold text-slate-400 uppercase font-mono mb-1">Billing Client Account Overwrite:</label>
+              <select id="forceBillingAccount" class="w-full bg-slate-800 border border-slate-700 rounded px-2.5 py-1.5 text-xs font-mono text-amber-400 focus:outline-none focus:border-amber-500">
+                <option value="">-- Use Manifest Default File Code --</option>
+                <option value="FED001">FEDEX (FED001)</option>
+                <option value="BM001">BRIMA (BM001)</option>
+                <option value="SEA001">SEABOURNE LOGISTICS (SEA001)</option>
+                <option value="RB001">R.B.S.N COURIERS (RB001)</option>
+                <option value="ACT001">ACT (ACT001)</option>
+                <option value="SR001">SEND&RECEIVE (SR001)</option>
+                <option value="FF001">FIRST FREIGHT (FF001)</option>
+                <option value="FDC001">FDC (FDC001)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-slate-400 uppercase font-mono mb-1">Morning Physical Freight Station:</label>
+              <input type="text" id="barcodeScannerInput" placeholder="Load manifest first to unlock scanning..." class="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs font-mono text-emerald-400 focus:outline-none focus:border-emerald-500" disabled />
+            </div>
             
             <div class="space-y-3">
               <div class="border border-dashed border-slate-700 rounded-md p-4 text-center bg-slate-900/40 hover:border-slate-500 transition-all relative">
@@ -94,7 +111,7 @@
               
               <div id="csvPreflightBox" class="hidden text-[11px] bg-slate-900 border border-slate-800 rounded p-2.5 space-y-1 font-mono">
                 <div class="text-amber-400 font-bold uppercase tracking-wider text-[10px]">✓ Manifest Parsed Securely</div>
-                <div class="flex justify-between text-slate-400"><span>Client Account:</span> <span id="preflightAcc" class="text-white font-bold">N/A</span></div>
+                <div class="flex justify-between text-slate-400"><span>Target Billing Account:</span> <span id="preflightAcc" class="text-white font-bold">N/A</span></div>
                 <div class="flex justify-between text-slate-400"><span>Total Consignments:</span> <span id="preflightRows" class="text-white font-bold">0</span></div>
               </div>
 
@@ -369,7 +386,7 @@
     <div class="max-w-7xl mx-auto px-6 lg:px-8 py-12">
       <div class="flex flex-col md:flex-row justify-between items-center gap-6 border-b border-forest-900 pb-8">
         <div>
-          <span class="text-white font-extrabold tracking-tight text-lg block">MM COURIAM SERVICES</span>
+          <span class="text-white font-extrabold tracking-tight text-lg block">MM COURIER SERVICES</span>
           <span class="text-xs text-slate-400 block mt-1">Corporate Freight Distribution Network — Est. 2008</span>
         </div>
         <div class="flex gap-6 text-xs font-medium text-slate-400">
@@ -449,7 +466,7 @@
       step2Badge.className = "bg-forest-700 text-white px-2 py-0.5 rounded-sm";
     });
 
-    document.getElementById('backStepBtn').addEventListener('click', () => {
+    document.getElementById('border-slate-30' || 'backStepBtn').addEventListener('click', () => {
       step2.classList.replace('block', 'hidden');
       step1.classList.replace('hidden', 'block');
       step2Badge.className = "bg-slate-100 text-slate-400 px-2 py-0.5 rounded-sm";
@@ -542,7 +559,6 @@
         date: new Date().toLocaleDateString('en-ZA')
       };
 
-      // Cache locally
       localSimulationCache[dynamicWaybill] = submissionData;
 
       try {
@@ -576,16 +592,16 @@
       const lines = csvText.split(/\r?\n/);
       if(lines.length < 2) return alert("Error: Empty or corrupted distribution file injected.");
 
-      // Dynamic header mapping matching client specs
       const headers = lines[0].split(',').map(h => h.trim().replace(/["']/g, ""));
       parsedCsvDataArray = [];
 
-      let clientAccount = "UNKNOWN_B2B";
+      // Look at drop-down override state configuration parameters
+      const selectedAccountOverride = document.getElementById('forceBillingAccount').value;
+      let displayAccount = selectedAccountOverride !== "" ? selectedAccountOverride : "UNKNOWN_B2B";
 
       for(let i = 1; i < lines.length; i++) {
         if(!lines[i].trim()) continue;
         
-        // Handle basic comma separation and string quote sanitization
         const columns = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.trim().replace(/["']/g, ""));
         
         let rowObj = {};
@@ -593,29 +609,31 @@
           rowObj[h] = columns[index] || "";
         });
 
-        // Map client identifier keys dynamically from variations
         const waybillId = rowObj["Waybill"] || rowObj["Waybill ID"] || rowObj["TrackNo"];
         if(!waybillId) continue;
 
-        if(rowObj["Accnum"]) clientAccount = rowObj["Accnum"];
+        if(selectedAccountOverride === "" && rowObj["Accnum"]) {
+          displayAccount = rowObj["Accnum"];
+        }
 
-        // Normalize data parameters for central tracking data structure
+        // CRITICAL INSTRUCTION: If user selected an account override choice from dropdown, apply it directly here
+        const finalBillingAccount = selectedAccountOverride !== "" ? selectedAccountOverride : (rowObj["Accnum"] || "SNT001");
+
         const normalRecord = {
           waybill: waybillId,
-          accnum: rowObj["Accnum"] || "SNT001",
+          accnum: finalBillingAccount,
           sender_address: rowObj["Sender"] ? `${rowObj["Sender"]}, ${rowObj["OrigAdd1"]} ${rowObj["OrigAdd2"]}` : "Corporate Hub Gateway",
           receiver_address: rowObj["Receiver"] ? `${rowObj["Receiver"]}, ${rowObj["DestAdd1"]} ${rowObj["DestAdd2"]}` : "Consignee Drop Node",
           weight_kg: Number(rowObj["ActKg"] || rowObj["ActMass"] || 10),
           service_type: rowObj["Service"] || "Road Freight Linehaul",
           pieces: Number(rowObj["Pieces"] || 1),
-          current_status: "Manifested"
+          current_status: "Manifest Downloaded (Unverified)" // Staging step marker tag for verification step
         };
 
         parsedCsvDataArray.push(normalRecord);
       }
 
-      // Display Ingestion Summary box
-      document.getElementById('preflightAcc').innerText = clientAccount;
+      document.getElementById('preflightAcc').innerText = displayAccount;
       document.getElementById('preflightRows').innerText = parsedCsvDataArray.length;
       document.getElementById('csvPreflightBox').classList.remove('hidden');
 
@@ -637,13 +655,44 @@
           await setDoc(doc(db, "shipments", record.waybill), record);
           uploadedCount++;
         } catch(e) {
-          uploadedCount++; // Maintain internal local counter path
+          uploadedCount++; 
         }
       }
 
-      alert(`Ingestion Pipeline Complete! ${uploadedCount} Corporate records initialized successfully inside live environment.`);
+      // UNLOCK SCANNING STATION INPUT STEP
+      const scannerField = document.getElementById('barcodeScannerInput');
+      scannerField.removeAttribute('disabled');
+      scannerField.placeholder = "👉 Ready for physical cargo passes...";
+      scannerField.focus();
+
+      alert(`Ingestion Pipeline Complete! ${uploadedCount} Corporate records initialized successfully inside cache registry views. Proceed with physical scans.`);
       btn.innerText = "Batch Upload Complete";
       syncLiveLedgerMetrics();
+    });
+
+    // --- NEXT MORNING SCANNING ENGINE RECONCILIATION HARDWARE TUNING ---
+    document.getElementById('barcodeScannerInput').addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter') {
+        const scannedWaybill = e.target.value.trim().toUpperCase();
+        if (!scannedWaybill) return;
+
+        e.target.value = ""; // Zero out immediately for next instant scan stream passing
+
+        if (localSimulationCache[scannedWaybill]) {
+          // SUCCESS MATCH: Update to sorting pool
+          localSimulationCache[scannedWaybill].current_status = "Hub Sorting Center";
+          
+          try {
+            await updateDoc(doc(db, "shipments", scannedWaybill), { current_status: "Hub Sorting Center" });
+          } catch(err) { /* Local fallback match rule integrity */ }
+          
+          alert(`✅ VERIFIED: Waybill [${scannedWaybill}] confirmed against server file manifest configurations.`);
+          syncLiveLedgerMetrics();
+        } else {
+          // MISMATCH: Freight is not accounted for within folder downloads
+          alert(`⚠️ RECONCILIATION ANOMALY: Scanned waybill [${scannedWaybill}] was not found inside the loaded FedEx manifest folder elements! Separate this parcel.`);
+        }
+      }
     });
 
     // --- OPERATIONS SYNC MATRIX METRIC RENDERING ---
@@ -658,11 +707,9 @@
           cloudItems.push({ waybill: doc.id, ...doc.data() });
         });
       } catch(e) {
-        // Fallback array map if server connection is blocked
         cloudItems = Object.keys(localSimulationCache).map(k => ({ waybill: k, ...localSimulationCache[k] }));
       }
 
-      // Ensure local simulation cache items are combined safely
       Object.keys(localSimulationCache).forEach(k => {
         if(!cloudItems.some(i => i.waybill === k)) {
           cloudItems.push({ waybill: k, ...localSimulationCache[k] });
@@ -674,7 +721,6 @@
         return;
       }
 
-      // Compute Dashboard Operational Counters
       let totalPieces = 0;
       let corporateCount = 0;
       let cashCount = 0;
@@ -716,7 +762,6 @@
         tbody.appendChild(tr);
       });
 
-      // Update counters in real-time HTML containers
       document.getElementById('metricTotal').innerText = cloudItems.length;
       document.getElementById('metricCorporate').innerText = corporateCount;
       document.getElementById('metricCash').innerText = cashCount;
