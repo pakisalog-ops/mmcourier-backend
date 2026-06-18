@@ -54,6 +54,31 @@
   </header>
 
   <main>
+    <div id="authGateModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+      <div class="w-full max-w-md bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden">
+        <div class="bg-slate-900 p-6 text-white">
+          <h3 class="text-lg font-bold tracking-tight">Operations Console Gatekeeper</h3>
+          <p class="text-xs text-slate-400 mt-1 font-mono">Restricted access protocol validation gateway</p>
+        </div>
+        <div class="p-6 space-y-4">
+          <div>
+            <label for="authEmailInput" class="block text-xs font-semibold uppercase text-slate-600 mb-1">Authorized Operator Email</label>
+            <input type="email" id="authEmailInput" placeholder="operator@mmcourier.co.za" class="w-full px-4 py-2 border border-slate-300 rounded focus:ring-2 focus:ring-forest-600 focus:border-forest-600 outline-none text-sm transition-all shadow-sm" />
+          </div>
+          <div>
+            <label for="authPasswordInput" class="block text-xs font-semibold uppercase text-slate-600 mb-1">Access Pin / Password</label>
+            <input type="password" id="authPasswordInput" placeholder="••••••••" class="w-full px-4 py-2 border border-slate-300 rounded focus:ring-2 focus:ring-forest-600 focus:border-forest-600 outline-none text-sm transition-all shadow-sm" />
+          </div>
+          <div class="flex items-center justify-end gap-2 pt-2">
+            <button id="cancelAuthBtn" class="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700">Cancel</button>
+            <button id="submitAuthBtn" class="bg-forest-700 hover:bg-forest-800 text-white font-semibold px-4 py-2 rounded text-xs transition-colors shadow-sm">
+              Verify Credentials
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <section id="adminDashboardSection" class="hidden bg-slate-900 text-slate-100 border-b border-slate-950 transition-all duration-300">
       <div class="max-w-7xl mx-auto px-6 lg:px-8 py-10">
         
@@ -65,9 +90,13 @@
             </div>
             <p class="text-xs text-slate-400 mt-1">Dual-Pipeline Logistics Engine (Cash Sales + Parcel Perfect B2B Account Manifest Processing).</p>
           </div>
-          <div class="flex flex-wrap gap-2">
+          <div class="flex flex-wrap gap-2 items-center">
+            <span id="activeOperatorBadge" class="hidden text-[10px] font-mono uppercase bg-slate-800 border border-slate-700 px-2 py-1 rounded text-emerald-400"></span>
             <button id="refreshAdminBtn" class="inline-flex items-center justify-center rounded bg-slate-800 border border-slate-700 px-4 py-2 text-xs font-bold text-slate-200 hover:bg-slate-700 transition-colors shadow-sm">
               🔄 Sync Live Ledger
+            </button>
+            <button id="logoutAdminBtn" class="inline-flex items-center justify-center rounded bg-rose-950/40 border border-rose-900/40 px-3 py-2 text-xs font-bold text-rose-400 hover:bg-rose-900/60 transition-colors shadow-sm">
+              Sign Out
             </button>
           </div>
         </div>
@@ -365,7 +394,7 @@
 
             <div class="grid grid-cols-2 gap-3">
               <button id="backStepBtn" class="bg-white border border-slate-300 text-slate-700 font-semibold py-3 rounded text-sm hover:bg-slate-50 transition-colors">
-                ← Edit Parameters
+                &larr; Edit Parameters
               </button>
               <button id="bookBtn" class="bg-forest-800 hover:bg-forest-900 text-white font-semibold py-3 rounded text-sm transition-colors shadow-sm">
                 Confirm &amp; Manifest Waybill
@@ -410,6 +439,8 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    // Added Firebase Auth Imports
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAONBCqsrZLlOuTxP_nFhBevlAaOlLwC_A",
@@ -423,17 +454,83 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const auth = getAuth(app); // Initialized auth instance
 
     // Central fallbacks & states
     const localSimulationCache = {};
     let parsedCsvDataArray = [];
+    let authenticatedUser = null;
 
-    // Toggle Operations Console Dashboard Visibility
+    // Monitor Firebase Auth State Changes
+    onAuthStateChanged(auth, (user) => {
+      const dashboard = document.getElementById('adminDashboardSection');
+      const badge = document.getElementById('activeOperatorBadge');
+      
+      if (user) {
+        authenticatedUser = user;
+        badge.innerText = `👤 ${user.email}`;
+        badge.classList.remove('hidden');
+        dashboard.classList.remove('hidden');
+        syncLiveLedgerMetrics();
+      } else {
+        authenticatedUser = null;
+        badge.classList.add('hidden');
+        badge.innerText = "";
+        dashboard.classList.add('hidden');
+      }
+    });
+
+    // Intercept Console toggle link for verification step
     document.getElementById('adminToggleLink').addEventListener('click', () => {
       const dashboard = document.getElementById('adminDashboardSection');
-      dashboard.classList.toggle('hidden');
-      if (!dashboard.classList.contains('hidden')) {
-        syncLiveLedgerMetrics();
+      
+      if (authenticatedUser) {
+        dashboard.classList.toggle('hidden');
+        if (!dashboard.classList.contains('hidden')) {
+          syncLiveLedgerMetrics();
+        }
+      } else {
+        // Not authenticated, pop the entry challenge modal card layout
+        document.getElementById('authGateModal').classList.remove('hidden');
+      }
+    });
+
+    // Authentication Challenge Actions
+    document.getElementById('cancelAuthBtn').addEventListener('click', () => {
+      document.getElementById('authGateModal').classList.add('hidden');
+    });
+
+    document.getElementById('submitAuthBtn').addEventListener('click', async () => {
+      const email = document.getElementById('authEmailInput').value.trim();
+      const password = document.getElementById('authPasswordInput').value;
+      const submitBtn = document.getElementById('submitAuthBtn');
+
+      if(!email || !password) return alert("Please specify operator email identity and encryption keys.");
+
+      try {
+        submitBtn.disabled = true;
+        submitBtn.innerText = "Authorizing...";
+        await signInWithEmailAndPassword(auth, email, password);
+        
+        // Zero out values
+        document.getElementById('authEmailInput').value = "";
+        document.getElementById('authPasswordInput').value = "";
+        document.getElementById('authGateModal').classList.add('hidden');
+      } catch (error) {
+        alert(`Authentication Intercept Failure: ${error.message}`);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = "Verify Credentials";
+      }
+    });
+
+    // Sign Out Trigger
+    document.getElementById('logoutAdminBtn').addEventListener('click', async () => {
+      try {
+        await signOut(auth);
+        alert("Operations identity revoked. Console locked.");
+      } catch (err) {
+        console.error("Logout runtime breakdown: ", err);
       }
     });
 
@@ -466,6 +563,7 @@
       step2Badge.className = "bg-forest-700 text-white px-2 py-0.5 rounded-sm";
     });
 
+    // Fixed Bug: Attaching listener accurately directly to element ID
     document.getElementById('backStepBtn').addEventListener('click', () => {
       step2.classList.replace('block', 'hidden');
       step1.classList.replace('hidden', 'block');
@@ -565,11 +663,11 @@
         await setDoc(doc(db, "shipments", dynamicWaybill), submissionData);
         resultBox.className = "mt-4 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded text-xs text-left space-y-1";
         resultBox.innerHTML = `<div>🎉 <strong>Cash Sale Manifested Successfully!</strong></div><div>Waybill Key: <span class="font-mono font-bold text-emerald-900 bg-emerald-100 px-1 rounded">${dynamicWaybill}</span></div><div class="text-[10px] text-emerald-600">Copy this code to track your shipment live.</div>`;
-        syncLiveLedgerMetrics();
+        if(authenticatedUser) syncLiveLedgerMetrics();
       } catch (e) {
         resultBox.className = "mt-4 p-4 bg-blue-50 border border-blue-200 text-blue-800 rounded text-xs text-left";
         resultBox.innerHTML = `<div>✓ <strong>Local Mock Manifest Saved!</strong></div><div>Waybill Key: <span class="font-mono font-bold bg-blue-100 px-1 rounded">${dynamicWaybill}</span> (Cached Locally due to Server Protection rules).</div>`;
-        syncLiveLedgerMetrics();
+        if(authenticatedUser) syncLiveLedgerMetrics();
       }
     });
 
@@ -595,7 +693,6 @@
       const headers = lines[0].split(',').map(h => h.trim().replace(/["']/g, ""));
       parsedCsvDataArray = [];
 
-      // Look at drop-down override state configuration parameters
       const selectedAccountOverride = document.getElementById('forceBillingAccount').value;
       let displayAccount = selectedAccountOverride !== "" ? selectedAccountOverride : "UNKNOWN_B2B";
 
@@ -616,7 +713,6 @@
           displayAccount = rowObj["Accnum"];
         }
 
-        // CRITICAL INSTRUCTION: If user selected an account override choice from dropdown, apply it directly here
         const finalBillingAccount = selectedAccountOverride !== "" ? selectedAccountOverride : (rowObj["Accnum"] || "SNT001");
 
         const normalRecord = {
@@ -627,7 +723,7 @@
           weight_kg: Number(rowObj["ActKg"] || rowObj["ActMass"] || 10),
           service_type: rowObj["Service"] || "Road Freight Linehaul",
           pieces: Number(rowObj["Pieces"] || 1),
-          current_status: "Manifest Downloaded (Unverified)" // Staging step marker tag for verification step
+          current_status: "Manifest Downloaded (Unverified)"
         };
 
         parsedCsvDataArray.push(normalRecord);
@@ -642,7 +738,6 @@
       commitBtn.innerText = `Load ${parsedCsvDataArray.length} Batch Waybills to System Database`;
     }
 
-    // Committing bulk processed files
     document.getElementById('commitBulkBtn').addEventListener('click', async () => {
       const btn = document.getElementById('commitBulkBtn');
       btn.disabled = true;
@@ -659,7 +754,6 @@
         }
       }
 
-      // UNLOCK SCANNING STATION INPUT STEP
       const scannerField = document.getElementById('barcodeScannerInput');
       scannerField.removeAttribute('disabled');
       scannerField.placeholder = "👉 Ready for physical cargo passes...";
@@ -676,20 +770,18 @@
         const scannedWaybill = e.target.value.trim().toUpperCase();
         if (!scannedWaybill) return;
 
-        e.target.value = ""; // Zero out immediately for next instant scan stream passing
+        e.target.value = "";
 
         if (localSimulationCache[scannedWaybill]) {
-          // SUCCESS MATCH: Update to sorting pool
           localSimulationCache[scannedWaybill].current_status = "Hub Sorting Center";
           
           try {
             await updateDoc(doc(db, "shipments", scannedWaybill), { current_status: "Hub Sorting Center" });
-          } catch(err) { /* Local fallback match rule integrity */ }
+          } catch(err) { }
           
           alert(`✅ VERIFIED: Waybill [${scannedWaybill}] confirmed against server file manifest configurations.`);
           syncLiveLedgerMetrics();
         } else {
-          // MISMATCH: Freight is not accounted for within folder downloads
           alert(`⚠️ RECONCILIATION ANOMALY: Scanned waybill [${scannedWaybill}] was not found inside the loaded FedEx manifest folder elements! Separate this parcel.`);
         }
       }
@@ -697,6 +789,7 @@
 
     // --- OPERATIONS SYNC MATRIX METRIC RENDERING ---
     async function syncLiveLedgerMetrics() {
+      if(!authenticatedUser) return;
       const tbody = document.getElementById('adminTableBody');
       tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-500 font-medium animate-pulse font-mono">Re-indexing distribution records...</td></tr>`;
 
@@ -742,7 +835,7 @@
           </td>
           <td class="p-4 max-w-xs truncate text-slate-400">
             <div class="text-slate-200 font-medium truncate">${item.sender_address || 'Main Hub'}</div>
-            <div class="text-[11px] text-slate-500 truncate">→ ${item.receiver_address || 'Drop Node'}</div>
+            <div class="text-[11px] text-slate-500 truncate">&rarr; ${item.receiver_address || 'Drop Node'}</div>
           </td>
           <td class="p-4 font-mono text-[11px]">
             <div>Mass: ${item.weight_kg} kg</div>
