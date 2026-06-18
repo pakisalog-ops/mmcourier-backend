@@ -44,6 +44,7 @@
           <a href="#home" class="text-sm font-medium text-slate-600 hover:text-forest-700 transition-colors">Home</a>
           <a href="#services" class="text-sm font-medium text-slate-600 hover:text-forest-700 transition-colors">Services</a>
           <a href="#contact" class="text-sm font-medium text-slate-600 hover:text-forest-700 transition-colors">Contact</a>
+          <button id="adminToggleLink" class="text-xs font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded hover:bg-amber-100 transition-colors">Admin Panel</button>
         </div>
         <a href="#book" class="inline-flex items-center justify-center rounded-md bg-forest-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-forest-800 transition-colors">
           Get a Quote
@@ -53,6 +54,61 @@
   </header>
 
   <main>
+    <section id="adminDashboardSection" class="hidden bg-slate-900 text-slate-100 border-b border-slate-950 transition-all duration-300">
+      <div class="max-w-7xl mx-auto px-6 lg:px-8 py-10">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-6 mb-6 gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <h2 class="text-lg font-bold tracking-tight text-white uppercase font-mono">Operations Console v1.0</h2>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Direct read/write access stream over live <span class="text-amber-400">mmcourier-e6f30</span> collections index.</p>
+          </div>
+          <button id="refreshAdminBtn" class="inline-flex items-center justify-center rounded bg-forest-700 px-4 py-2 text-xs font-bold text-white hover:bg-forest-600 transition-colors shadow-sm">
+            🔄 Sync Live Database Manifest
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div class="bg-slate-800/60 border border-slate-700/50 rounded p-4">
+            <span class="block text-[10px] uppercase font-bold tracking-wider text-slate-400">Active Pipeline Volume</span>
+            <span id="metricTotal" class="text-xl font-black text-white mt-1 block">0</span>
+          </div>
+          <div class="bg-slate-800/60 border border-slate-700/50 rounded p-4">
+            <span class="block text-[10px] uppercase font-bold tracking-wider text-amber-400">In Sorting Hub</span>
+            <span id="metricSorting" class="text-xl font-black text-white mt-1 block">0</span>
+          </div>
+          <div class="bg-slate-800/60 border border-slate-700/50 rounded p-4">
+            <span class="block text-[10px] uppercase font-bold tracking-wider text-blue-400">Out For Delivery</span>
+            <span id="metricDelivery" class="text-xl font-black text-white mt-1 block">0</span>
+          </div>
+          <div class="bg-slate-800/60 border border-slate-700/50 rounded p-4">
+            <span class="block text-[10px] uppercase font-bold tracking-wider text-emerald-400">Completed drops</span>
+            <span id="metricDelivered" class="text-xl font-black text-white mt-1 block">0</span>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto rounded border border-slate-800 bg-slate-950/40">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-900/80 border-b border-slate-800 text-[11px] uppercase tracking-wider font-bold text-slate-400">
+                <th class="p-4">Waybill Token</th>
+                <th class="p-4">Route Leg (Sender → Target)</th>
+                <th class="p-4">Configuration Spec</th>
+                <th class="p-4">Current Registered Lifecycle Status</th>
+                <th class="p-4 text-right">Administrative State Override Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminTableBody" class="divide-y divide-slate-800 text-xs text-slate-300">
+              <tr>
+                <td colspan="5" class="p-8 text-center text-slate-500 font-medium">Click "Sync Live Database Manifest" to parse cloud collections...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
     <section id="home" class="bg-white border-b border-slate-200">
       <div class="max-w-7xl mx-auto px-6 lg:px-8 py-16 lg:py-24">
         <div class="grid lg:grid-cols-2 gap-12 items-center">
@@ -284,9 +340,8 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // ✅ PLUGGED IN LIVE PRODUCTION KEYS FOR MMCOURIER PROJECT
     const firebaseConfig = {
       apiKey: "AIzaSyAONBCqsrZLlOuTxP_nFhBevlAaOlLwC_A",
       authDomain: "mmcourier-e6f30.firebaseapp.com",
@@ -297,11 +352,9 @@
       measurementId: "G-KJ84ZCMBBN"
     };
 
-    // Instantiate Database
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Dynamic simulation cache fallback dictionary
     const localSimulationCache = {};
 
     // --- INTERACTIVE ENGINE UI CONTROLLER ---
@@ -318,18 +371,15 @@
 
       if(!sender || !receiver) return alert("Validation Failed: Route coordinates cannot be left blank.");
 
-      // Dynamic Matrix Calculator algorithm (ZAR)
       const multiplier = service === "overnight" ? 22.50 : 8.75;
       const baseCost = service === "overnight" ? 175.00 : 95.00;
       const massCost = weight * multiplier;
       const absoluteTotal = baseCost + massCost + 45.00;
 
-      // Update Invoice Display Text
       document.getElementById('quoteBase').innerText = `R${baseCost.toFixed(2)}`;
       document.getElementById('quoteSurcharge').innerText = `R${massCost.toFixed(2)}`;
       document.getElementById('quoteTotal').innerText = `R${absoluteTotal.toFixed(2)}`;
 
-      // Swap wizard steps visibility
       step1.classList.replace('block', 'hidden');
       step2.classList.replace('hidden', 'block');
       step1Badge.className = "bg-slate-100 text-slate-400 px-2 py-0.5 rounded-sm";
@@ -343,7 +393,7 @@
       step1Badge.className = "bg-forest-700 text-white px-2 py-0.5 rounded-sm";
     });
 
-    // --- LOGIC 1: TRACKING CONTROLLER WITH SIMULATION FALLBACK ---
+    // --- LOGIC 1: TRACKING CONTROLLER ---
     document.getElementById('trackBtn').addEventListener('click', async () => {
       const waybill = document.getElementById('waybillInput').value.trim().toUpperCase();
       const resultBox = document.getElementById('trackingResult');
@@ -353,7 +403,6 @@
       resultBox.className = "mt-4 p-4 bg-slate-100 border border-slate-300 rounded text-xs text-slate-800 animate-pulse";
       resultBox.innerText = "Interrogating operational ledger arrays...";
 
-      // INTERCEPT FOR HARDCODED STATIC DEMO PIN
       if(waybill === "MM2612345") {
         renderTrackingView(resultBox, {
           current_status: "In Transit (Linehaul Interprovincial)",
@@ -365,13 +414,11 @@
         return;
       }
 
-      // INTERCEPT FOR LOCALLY CREATED SESSIONS WHILE DEVELOPING
       if(localSimulationCache[waybill]) {
         renderTrackingView(resultBox, localSimulationCache[waybill], true);
         return;
       }
 
-      // STANDARD PRODUCTION DATABASE QUERY FLOW
       try {
         const docRef = doc(db, "shipments", waybill);
         const docSnap = await getDoc(docRef);
@@ -398,7 +445,6 @@
         <div><strong>📍 FROM:</strong> ${data.sender_address}</div>
         <div><strong>🏁 TO:</strong> ${data.receiver_address}</div>
         <div><strong>🚛 TYPE:</strong> ${data.service_type.replace('_', ' ').toUpperCase()} (${data.weight_kg}kg)</div>
-        ${isSimulated ? `<div class="text-[10px] text-slate-500 bg-emerald-100/50 p-1 rounded font-mono mt-1">• [Live Update] Hub Sorting Clearance Completed — ZA Express Logistics Center</div>` : ''}
       `;
     }
 
@@ -419,7 +465,7 @@
         receiver_address: receiver,
         weight_kg: Number(weight),
         service_type: service,
-        current_status: "In Transit (Hub Sorting Center)",
+        current_status: "Hub Sorting Center",
         created_at: new Date().toISOString()
       };
 
@@ -427,7 +473,6 @@
         await setDoc(doc(db, "shipments", dynamicWaybill), submissionData);
         finalizeBookingResult(dynamicWaybill, false);
       } catch (error) {
-        // Safe sandbox architecture: saves to local cache if Firestore blocks the push
         localSimulationCache[dynamicWaybill] = submissionData;
         finalizeBookingResult(dynamicWaybill, true);
       }
@@ -437,7 +482,7 @@
         resultBox.innerHTML = `
           <div class="font-bold text-sm text-emerald-800">✓ Digital Waybill Manifested Successfully</div>
           <div class="pt-1"><strong>WAYBILL ID:</strong> <span class="font-mono bg-white border px-1.5 py-0.5 rounded font-bold text-slate-900">${id}</span></div>
-          <div class="text-[11px] text-slate-500 pt-1">${isLocalFallback ? 'Saved to local simulation layer.' : 'Committed straight to live Firestore network.'} Copy this waybill and test it in the tracker panel!</div>
+          <div class="text-[11px] text-slate-500 pt-1">Waybill committed to cluster. Toggle the top admin panel to manage or update its live dispatch cycle status!</div>
         `;
         
         setTimeout(() => {
@@ -448,6 +493,89 @@
         }, 8000);
       }
     });
+
+    // --- ADMIN SYSTEM MATRIX AND CORE CONTROL HOOKS ---
+    const adminSection = document.getElementById('adminDashboardSection');
+    const tableBody = document.getElementById('adminTableBody');
+
+    document.getElementById('adminToggleLink').addEventListener('click', () => {
+      adminSection.classList.toggle('hidden');
+      if (!adminSection.classList.contains('hidden')) {
+        syncAdminDashboardData();
+      }
+    });
+
+    document.getElementById('refreshAdminBtn').addEventListener('click', syncAdminDashboardData);
+
+    async function syncAdminDashboardData() {
+      tableBody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400 animate-pulse font-mono">Streaming records directly from Firebase shards...</td></tr>`;
+      
+      let total = 0, sorting = 0, delivery = 0, delivered = 0;
+      
+      try {
+        const querySnapshot = await getDocs(collection(db, "shipments"));
+        tableBody.innerHTML = "";
+        
+        if (querySnapshot.empty) {
+          tableBody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-500">No shipments found in your cloud cluster repository.</td></tr>`;
+          return;
+        }
+
+        querySnapshot.forEach((shipmentDoc) => {
+          const id = shipmentDoc.id;
+          const data = shipmentDoc.data();
+          total++;
+
+          if(data.current_status === "Hub Sorting Center") sorting++;
+          else if(data.current_status === "Out For Delivery") delivery++;
+          else if(data.current_status === "Delivered") delivered++;
+
+          const row = document.createElement('tr');
+          row.className = "hover:bg-slate-900 border-b border-slate-800/60 transition-colors";
+          row.innerHTML = `
+            <td class="p-4 font-mono font-bold text-amber-400">${id}</td>
+            <td class="p-4 max-w-xs truncate"><span class="text-slate-400">From:</span> ${data.sender_address}<br/><span class="text-slate-400">To:</span> ${data.receiver_address}</td>
+            <td class="p-4 text-[11px] text-slate-400 font-mono">${data.service_type} (${data.weight_kg}kg)</td>
+            <td class="p-4">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                data.current_status === 'Delivered' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' :
+                data.current_status === 'Out For Delivery' ? 'bg-blue-950 text-blue-400 border border-blue-800' : 'bg-amber-950 text-amber-400 border border-amber-800'
+              }">${data.current_status}</span>
+            </td>
+            <td class="p-4 text-right space-x-1 whitespace-nowrap">
+              <button class="update-status-btn bg-blue-600 hover:bg-blue-700 text-white font-bold px-2 py-1 rounded text-[10px] tracking-tight transition-colors" data-id="${id}" data-status="Out For Delivery">🚚 Out for Delivery</button>
+              <button class="update-status-btn bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2 py-1 rounded text-[10px] tracking-tight transition-colors" data-id="${id}" data-status="Delivered">✅ Delivered</button>
+            </td>
+          `;
+          tableBody.appendChild(row);
+        });
+
+        document.getElementById('metricTotal').innerText = total;
+        document.getElementById('metricSorting').innerText = sorting;
+        document.getElementById('metricDelivery').innerText = delivery;
+        document.getElementById('metricDelivered').innerText = delivered;
+
+        document.querySelectorAll('.update-status-btn').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const targetId = e.target.getAttribute('data-id');
+            const nextStatusValue = e.target.getAttribute('data-status');
+            
+            e.target.innerText = "Saving...";
+            
+            try {
+              const shipmentRef = doc(db, "shipments", targetId);
+              await updateDoc(shipmentRef, { current_status: nextStatusValue });
+              syncAdminDashboardData();
+            } catch (err) {
+              alert("Write Action Blocked: " + err.message);
+            }
+          });
+        });
+
+      } catch (error) {
+        tableBody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-rose-400">Failed to stream database records: ${error.message}</td></tr>`;
+      }
+    }
   </script>
 </body>
 </html>
