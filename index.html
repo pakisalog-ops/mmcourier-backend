@@ -54,7 +54,7 @@
   </header>
 
   <main>
-    <div id="authGateModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+    <div id="authGateModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
       <div class="w-full max-w-md bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden">
         <div class="bg-slate-900 p-6 text-white">
           <h3 class="text-lg font-bold tracking-tight">Operations Console Gatekeeper</h3>
@@ -349,28 +349,42 @@
           </div>
           
           <div id="formStep1" class="space-y-4 block">
-            <div>
-              <label for="senderAddr" class="block text-xs font-semibold uppercase text-slate-600 mb-2">Collection Node (Sender Address)</label>
-              <input type="text" id="senderAddr" placeholder="e.g., 14 Corporate Dr, Sandton, 2196" class="w-full px-4 py-2.5 border border-slate-300 rounded focus:ring-2 focus:ring-forest-600 focus:border-forest-600 outline-none text-sm transition-all" />
-            </div>
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label for="senderAddr" class="block text-xs font-semibold uppercase text-slate-600 mb-2">Collection Node (Sender Area)</label>
+                <select id="senderAddr" class="w-full px-4 py-2.5 border border-slate-300 rounded focus:ring-2 focus:ring-forest-600 focus:border-forest-600 outline-none text-sm bg-white transition-all">
+                  </select>
+              </div>
 
-            <div>
-              <label for="receiverAddr" class="block text-xs font-semibold uppercase text-slate-600 mb-2">Delivery Destination (Receiver Address)</label>
-              <input type="text" id="receiverAddr" placeholder="e.g., Terminal 2, Cape Town Harbour, 8001" class="w-full px-4 py-2.5 border border-slate-300 rounded focus:ring-2 focus:ring-forest-600 focus:border-forest-600 outline-none text-sm transition-all" />
+              <div>
+                <label for="receiverAddr" class="block text-xs font-semibold uppercase text-slate-600 mb-2">Delivery Destination (Receiver Area)</label>
+                <select id="receiverAddr" class="w-full px-4 py-2.5 border border-slate-300 rounded focus:ring-2 focus:ring-forest-600 focus:border-forest-600 outline-none text-sm bg-white transition-all">
+                  </select>
+              </div>
             </div>
 
             <div class="grid sm:grid-cols-2 gap-4">
               <div>
                 <label for="weight" class="block text-xs font-semibold uppercase text-slate-600 mb-2">Consignment Mass (kg)</label>
-                <input type="number" id="weight" value="15" min="1" class="w-full px-4 py-2.5 border border-slate-300 rounded focus:ring-2 focus:ring-forest-600 focus:border-forest-600 outline-none text-sm transition-all" />
+                <input type="number" id="weight" value="12" min="1" class="w-full px-4 py-2.5 border border-slate-300 rounded focus:ring-2 focus:ring-forest-600 focus:border-forest-600 outline-none text-sm transition-all" />
               </div>
               <div>
-                <label for="service" class="block text-xs font-semibold uppercase text-slate-600 mb-2">Logistics Pipeline</label>
-                <select id="service" class="w-full px-4 py-2.5 border border-slate-300 rounded focus:ring-2 focus:ring-forest-600 focus:border-forest-600 outline-none text-sm bg-white transition-all">
-                  <option value="Economy Road Freight">Economy Road Freight (Distribution)</option>
-                  <option value="Overnight Air Freight">Overnight Air Freight Express</option>
+                <label for="surchargeType" class="block text-xs font-semibold uppercase text-slate-600 mb-2">Destination Type Surcharge</label>
+                <select id="surchargeType" class="w-full px-4 py-2.5 border border-slate-300 rounded focus:ring-2 focus:ring-forest-600 focus:border-forest-600 outline-none text-sm bg-white transition-all">
+                  <option value="Standard">Standard Commercial / Residential</option>
+                  <option value="Plots">Plots (+R116.05)</option>
+                  <option value="Mines">Mines (+R116.05)</option>
+                  <option value="Chain Stores">Chain Stores (+R95.00)</option>
+                  <option value="Distribution Centre">Distribution Centre (+R450.00)</option>
                 </select>
               </div>
+            </div>
+
+            <div class="p-3.5 bg-slate-50 rounded border border-slate-200">
+              <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer select-none">
+                <input type="checkbox" id="weekendSurcharge" class="w-4 h-4 rounded text-forest-700 focus:ring-forest-600 border-slate-300" />
+                <span>Request Weekend / Public Holiday Delivery (+R850.00)</span>
+              </label>
             </div>
 
             <button id="nextStepBtn" class="w-full bg-forest-700 hover:bg-forest-800 text-white font-semibold py-3 rounded text-sm transition-colors shadow-sm mt-2">
@@ -381,14 +395,17 @@
           <div id="formStep2" class="space-y-4 hidden">
             <div class="bg-slate-50 border border-slate-200 rounded-lg p-5">
               <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Live Linehaul Quotation Summary</h3>
-              <div class="space-y-2 text-sm border-b border-slate-200 pb-3">
-                <div class="flex justify-between"><span class="text-slate-500">Base Freight Route Fee:</span> <span class="font-medium text-slate-900" id="quoteBase">R95.00</span></div>
-                <div class="flex justify-between"><span class="text-slate-500">Consignment Mass Allocation:</span> <span class="font-medium text-slate-900" id="quoteSurcharge">R131.25</span></div>
-                <div class="flex justify-between"><span class="text-slate-500">National Fuel &amp; Security Surcharges:</span> <span class="font-medium text-slate-900">R45.00</span></div>
+              <div class="space-y-2 text-sm border-b border-slate-200 pb-3 font-mono text-xs">
+                <div class="flex justify-between"><span class="text-slate-500">Route Rate Type:</span> <span class="font-medium text-slate-900" id="quoteZoneType">JHB Base</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">Base Rate (First 10kg):</span> <span class="font-medium text-slate-900" id="quoteBase">R0.00</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">Additional Mass Cost:</span> <span class="font-medium text-slate-900" id="quoteMassCost">R0.00</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">Specialized Destination Surcharge:</span> <span class="font-medium text-slate-900" id="quoteDestSurcharge">R0.00</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">Time-window Surcharge:</span> <span class="font-medium text-slate-900" id="quoteTimeSurcharge">R0.00</span></div>
+                <div class="flex justify-between text-amber-800 font-bold"><span class="text-slate-500">Fuel Surcharge (30%):</span> <span id="quoteFuelSurcharge">R0.00</span></div>
               </div>
               <div class="flex justify-between items-center pt-3">
                 <span class="text-sm font-bold text-slate-900">Estimated Invoice Total (ZAR):</span>
-                <span class="text-xl font-black text-forest-700" id="quoteTotal">R271.25</span>
+                <span class="text-xl font-black text-forest-700" id="quoteTotal">R0.00</span>
               </div>
             </div>
 
@@ -439,7 +456,6 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    // Added Firebase Auth Imports
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -454,12 +470,48 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const auth = getAuth(app); // Initialized auth instance
+    const auth = getAuth(app);
 
     // Central fallbacks & states
     const localSimulationCache = {};
     let parsedCsvDataArray = [];
     let authenticatedUser = null;
+
+    // Region Area Configuration Vectors
+    const jhbAreas = [
+      "Actonville", "Alexandra", "Bakerton", "Daveyton", "Edenpark", "Duduza", "Geluksdal", "Heidelberg", 
+      "Katlehong", "Kwa-Thema", "Natalspruit", "Reigerpark", "Spruitview", "Tembisa", "Thokoza", "Tsakane", 
+      "Vosloorus", "Wattville", "Springs", "Brakpan", "Devland", "Eldorado Park", "Ennerdale", "Nancefield", 
+      "Naturena", "Soweto", "Riverlea", "Bosmont", "Newclare", "JHB CBD", "Randfontein", "Sundra", "Welgedacht"
+    ];
+
+    const pvrAreas = [
+      "Boipatong", "Evaton", "Orange Farm", "Palm Springs", "Sebokeng", "Sharpeville", "Walkerville", 
+      "Vereeniging", "Sasolburg", "Vanderbijlpark", "Eikenhof", "Three Rivers", "Randvaal", "Daleside", 
+      "Kliprivier", "Phelindaba", "Ga-Rankuwa", "Saulsville", "Mabopane", "Atteridgeville", "Soshanguve", 
+      "Hammanskraal", "Mamelodi", "Themba", "Babelegi", "Laudium", "Centurion", "Winterveld", "Karenpark"
+    ];
+
+    // Populate Dropdown Menus
+    function populateAreaSelectors() {
+      const senderSelect = document.getElementById('senderAddr');
+      const receiverSelect = document.getElementById('receiverAddr');
+      
+      let htmlOptions = `<optgroup label="Johannesburg Sector (JHB)">`;
+      jhbAreas.sort().forEach(area => htmlOptions += `<option value="${area}">${area}</option>`);
+      htmlOptions += `</optgroup><optgroup label="Para-Valley/Pretoria Sector (PVR)">`;
+      pvrAreas.sort().forEach(area => htmlOptions += `<option value="${area}">${area}</option>`);
+      htmlOptions += `</optgroup><optgroup label="Other Regional Logistics">`;
+      htmlOptions += `<option value="Outlying">Outlying / Non-Standard Area</option></optgroup>`;
+
+      senderSelect.innerHTML = htmlOptions;
+      receiverSelect.innerHTML = htmlOptions;
+      
+      // Default selections
+      senderSelect.value = "JHB CBD";
+      receiverSelect.value = "Three Rivers";
+    }
+    populateAreaSelectors();
 
     // Monitor Firebase Auth State Changes
     onAuthStateChanged(auth, (user) => {
@@ -480,22 +532,18 @@
       }
     });
 
-    // Intercept Console toggle link for verification step
     document.getElementById('adminToggleLink').addEventListener('click', () => {
       const dashboard = document.getElementById('adminDashboardSection');
-      
       if (authenticatedUser) {
         dashboard.classList.toggle('hidden');
         if (!dashboard.classList.contains('hidden')) {
           syncLiveLedgerMetrics();
         }
       } else {
-        // Not authenticated, pop the entry challenge modal card layout
         document.getElementById('authGateModal').classList.remove('hidden');
       }
     });
 
-    // Authentication Challenge Actions
     document.getElementById('cancelAuthBtn').addEventListener('click', () => {
       document.getElementById('authGateModal').classList.add('hidden');
     });
@@ -511,8 +559,6 @@
         submitBtn.disabled = true;
         submitBtn.innerText = "Authorizing...";
         await signInWithEmailAndPassword(auth, email, password);
-        
-        // Zero out values
         document.getElementById('authEmailInput').value = "";
         document.getElementById('authPasswordInput').value = "";
         document.getElementById('authGateModal').classList.add('hidden');
@@ -524,38 +570,75 @@
       }
     });
 
-    // Sign Out Trigger
     document.getElementById('logoutAdminBtn').addEventListener('click', async () => {
       try {
         await signOut(auth);
         alert("Operations identity revoked. Console locked.");
       } catch (err) {
-        console.error("Logout runtime breakdown: ", err);
+        console.error(err);
       }
     });
 
-    // --- RETAIL ENGINE UI EVENT HOOKS ---
+    // --- LOGISTICS CALCULATOR RATEMAKING CORE ENGINE ---
     const step1 = document.getElementById('formStep1');
     const step2 = document.getElementById('formStep2');
     const step1Badge = document.getElementById('step1Badge');
     const step2Badge = document.getElementById('step2Badge');
 
     document.getElementById('nextStepBtn').addEventListener('click', () => {
-      const sender = document.getElementById('senderAddr').value.trim();
-      const receiver = document.getElementById('receiverAddr').value.trim();
+      const sender = document.getElementById('senderAddr').value;
+      const receiver = document.getElementById('receiverAddr').value;
       const weight = parseFloat(document.getElementById('weight').value) || 1;
-      const service = document.getElementById('service').value;
+      const surchargeSelection = document.getElementById('surchargeType').value;
+      const isWeekend = document.getElementById('weekendSurcharge').checked;
 
-      if(!sender || !receiver) return alert("Validation Failed: Route coordinates cannot be left blank.");
+      // Rate Variables
+      let zoneLabel = "JHB Next-Day Base";
+      let baseCost = 55.00;
+      let extraKgRate = 2.30;
+      let locationSurcharge = 0.00;
+      let timeSurcharge = isWeekend ? 850.00 : 0.00;
 
-      const multiplier = service.includes("Overnight") ? 22.50 : 8.75;
-      const baseCost = service.includes("Overnight") ? 175.00 : 95.00;
-      const massCost = weight * multiplier;
-      const absoluteTotal = baseCost + massCost + 45.00;
+      // Identify Target Pricing Zone
+      const isSenderPvr = pvrAreas.includes(sender);
+      const isReceiverPvr = pvrAreas.includes(receiver);
+      const isOutlying = (sender === "Outlying" || receiver === "Outlying");
 
+      if (isOutlying) {
+        zoneLabel = "Outlying Area Protocol";
+        baseCost = 55.00; // Keep JHB base for base calculation structure
+        locationSurcharge += 550.00;
+      } else if (isSenderPvr || isReceiverPvr) {
+        zoneLabel = "PVR Next-Day Base";
+        baseCost = 65.00;
+        extraKgRate = 2.50;
+      }
+
+      // Compute Weight-Based Cost
+      let weightCost = 0.00;
+      if (weight > 10) {
+        weightCost = (weight - 10) * extraKgRate;
+      }
+
+      // Add Destination Surcharges
+      if (surchargeSelection === "Plots") locationSurcharge += 116.05;
+      if (surchargeSelection === "Mines") locationSurcharge += 116.05;
+      if (surchargeSelection === "Chain Stores") locationSurcharge += 95.00;
+      if (surchargeSelection === "Distribution Centre") locationSurcharge += 450.00;
+
+      // Compound Calculations
+      const subtotalBeforeFuel = baseCost + weightCost + locationSurcharge + timeSurcharge;
+      const fuelSurchargeAmount = subtotalBeforeFuel * 0.30; // Explicit 30% Fuel
+      const totalInvoiceCost = subtotalBeforeFuel + fuelSurchargeAmount;
+
+      // Render view strings
+      document.getElementById('quoteZoneType').innerText = zoneLabel;
       document.getElementById('quoteBase').innerText = `R${baseCost.toFixed(2)}`;
-      document.getElementById('quoteSurcharge').innerText = `R${massCost.toFixed(2)}`;
-      document.getElementById('quoteTotal').innerText = `R${absoluteTotal.toFixed(2)}`;
+      document.getElementById('quoteMassCost').innerText = `R${weightCost.toFixed(2)}`;
+      document.getElementById('quoteDestSurcharge').innerText = `R${locationSurcharge.toFixed(2)}`;
+      document.getElementById('quoteTimeSurcharge').innerText = `R${timeSurcharge.toFixed(2)}`;
+      document.getElementById('quoteFuelSurcharge').innerText = `R${fuelSurchargeAmount.toFixed(2)}`;
+      document.getElementById('quoteTotal').innerText = `R${totalInvoiceCost.toFixed(2)}`;
 
       step1.classList.replace('block', 'hidden');
       step2.classList.replace('hidden', 'block');
@@ -563,7 +646,6 @@
       step2Badge.className = "bg-forest-700 text-white px-2 py-0.5 rounded-sm";
     });
 
-    // Fixed Bug: Attaching listener accurately directly to element ID
     document.getElementById('backStepBtn').addEventListener('click', () => {
       step2.classList.replace('block', 'hidden');
       step1.classList.replace('hidden', 'block');
@@ -585,10 +667,10 @@
         renderTrackingView(resultBox, {
           accnum: "RETAIL_CASH",
           current_status: "Out For Delivery",
-          sender_address: "14 Corporate Dr, Sandton, GP",
-          receiver_address: "Terminal 2, Cape Town Harbour, WC",
-          service_type: "Overnight Express",
-          weight_kg: "45",
+          sender_address: "JHB CBD Gateway Node",
+          receiver_address: "Three Rivers Drop Facility",
+          service_type: "Next Day Service",
+          weight_kg: "12",
           pieces: 1
         });
         return;
@@ -607,11 +689,11 @@
           renderTrackingView(resultBox, docSnap.data());
         } else {
           resultBox.className = "mt-4 p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded text-xs text-center font-medium";
-          resultBox.innerText = `Waybill lookup failed: [${waybill}] does not exist in active firestore records. Ensure the record has been uploaded via the operations dashboard.`;
+          resultBox.innerText = `Waybill lookup failed: [${waybill}] does not exist in active firestore records.`;
         }
       } catch (error) {
         resultBox.className = "mt-4 p-4 bg-amber-50 border border-amber-200 text-amber-900 rounded text-xs text-left";
-        resultBox.innerText = `Network/Rule Intercept: Falling back to local cache testing. Fallback code [MM2612345] remains active.`;
+        resultBox.innerText = `Network Intercept: Falling back to local cache testing. Fallback code [MM2612345] remains active.`;
       }
     });
 
@@ -629,17 +711,16 @@
         <div class="pt-1 border-t border-emerald-200/30 text-[11px] font-mono flex justify-between text-emerald-800">
           <span>PIECES: ${data.pieces || 1} item(s)</span>
           <span>WEIGHT: ${data.weight_kg || 'N/A'} kg</span>
-          <span>PIPELINE: ${data.service_type || 'Standard Distribution'}</span>
+          <span>PIPELINE: ${data.service_type || 'Next Day Service'}</span>
         </div>
       `;
     }
 
     // --- MANUAL CASH REGISTRATION ENGINE ---
     document.getElementById('bookBtn').addEventListener('click', async () => {
-      const sender = document.getElementById('senderAddr').value.trim();
-      const receiver = document.getElementById('receiverAddr').value.trim();
+      const sender = document.getElementById('senderAddr').value;
+      const receiver = document.getElementById('receiverAddr').value;
       const weight = document.getElementById('weight').value;
-      const service = document.getElementById('service').value;
       const resultBox = document.getElementById('bookingResult');
 
       resultBox.className = "mt-4 p-4 bg-slate-100 border border-slate-300 rounded text-xs text-slate-800 font-mono text-center";
@@ -651,7 +732,7 @@
         sender_address: sender,
         receiver_address: receiver,
         weight_kg: Number(weight),
-        service_type: service,
+        service_type: "Next Day Service",
         pieces: 1,
         current_status: "Booked",
         date: new Date().toLocaleDateString('en-ZA')
@@ -662,11 +743,11 @@
       try {
         await setDoc(doc(db, "shipments", dynamicWaybill), submissionData);
         resultBox.className = "mt-4 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded text-xs text-left space-y-1";
-        resultBox.innerHTML = `<div>🎉 <strong>Cash Sale Manifested Successfully!</strong></div><div>Waybill Key: <span class="font-mono font-bold text-emerald-900 bg-emerald-100 px-1 rounded">${dynamicWaybill}</span></div><div class="text-[10px] text-emerald-600">Copy this code to track your shipment live.</div>`;
+        resultBox.innerHTML = `<div>🎉 <strong>Cash Sale Manifested Successfully!</strong></div><div>Waybill Key: <span class="font-mono font-bold text-emerald-900 bg-emerald-100 px-1 rounded">${dynamicWaybill}</span></div>`;
         if(authenticatedUser) syncLiveLedgerMetrics();
       } catch (e) {
         resultBox.className = "mt-4 p-4 bg-blue-50 border border-blue-200 text-blue-800 rounded text-xs text-left";
-        resultBox.innerHTML = `<div>✓ <strong>Local Mock Manifest Saved!</strong></div><div>Waybill Key: <span class="font-mono font-bold bg-blue-100 px-1 rounded">${dynamicWaybill}</span> (Cached Locally due to Server Protection rules).</div>`;
+        resultBox.innerHTML = `<div>✓ <strong>Local Mock Manifest Saved!</strong></div><div>Waybill Key: <span class="font-mono font-bold bg-blue-100 px-1 rounded">${dynamicWaybill}</span> (Cached Locally).</div>`;
         if(authenticatedUser) syncLiveLedgerMetrics();
       }
     });
@@ -680,8 +761,7 @@
       const reader = new FileReader();
       
       reader.onload = function(evt) {
-        const text = evt.target.result;
-        parseManifestCsv(text);
+        parseManifestCsv(evt.target.result);
       };
       reader.readAsText(file);
     });
@@ -700,11 +780,8 @@
         if(!lines[i].trim()) continue;
         
         const columns = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.trim().replace(/["']/g, ""));
-        
         let rowObj = {};
-        headers.forEach((h, index) => {
-          rowObj[h] = columns[index] || "";
-        });
+        headers.forEach((h, index) => { rowObj[h] = columns[index] || ""; });
 
         const waybillId = rowObj["Waybill"] || rowObj["Waybill ID"] || rowObj["TrackNo"];
         if(!waybillId) continue;
@@ -718,10 +795,10 @@
         const normalRecord = {
           waybill: waybillId,
           accnum: finalBillingAccount,
-          sender_address: rowObj["Sender"] ? `${rowObj["Sender"]}, ${rowObj["OrigAdd1"]} ${rowObj["OrigAdd2"]}` : "Corporate Hub Gateway",
-          receiver_address: rowObj["Receiver"] ? `${rowObj["Receiver"]}, ${rowObj["DestAdd1"]} ${rowObj["DestAdd2"]}` : "Consignee Drop Node",
+          sender_address: rowObj["Sender"] || "Corporate Hub Gateway",
+          receiver_address: rowObj["Receiver"] || "Consignee Drop Node",
           weight_kg: Number(rowObj["ActKg"] || rowObj["ActMass"] || 10),
-          service_type: rowObj["Service"] || "Road Freight Linehaul",
+          service_type: rowObj["Service"] || "Next Day Service",
           pieces: Number(rowObj["Pieces"] || 1),
           current_status: "Manifest Downloaded (Unverified)"
         };
@@ -759,7 +836,7 @@
       scannerField.placeholder = "👉 Ready for physical cargo passes...";
       scannerField.focus();
 
-      alert(`Ingestion Pipeline Complete! ${uploadedCount} Corporate records initialized successfully inside cache registry views. Proceed with physical scans.`);
+      alert(`Ingestion Pipeline Complete! ${uploadedCount} Corporate records initialized successfully inside cache registry views.`);
       btn.innerText = "Batch Upload Complete";
       syncLiveLedgerMetrics();
     });
@@ -774,15 +851,13 @@
 
         if (localSimulationCache[scannedWaybill]) {
           localSimulationCache[scannedWaybill].current_status = "Hub Sorting Center";
-          
           try {
             await updateDoc(doc(db, "shipments", scannedWaybill), { current_status: "Hub Sorting Center" });
           } catch(err) { }
-          
           alert(`✅ VERIFIED: Waybill [${scannedWaybill}] confirmed against server file manifest configurations.`);
           syncLiveLedgerMetrics();
         } else {
-          alert(`⚠️ RECONCILIATION ANOMALY: Scanned waybill [${scannedWaybill}] was not found inside the loaded FedEx manifest folder elements! Separate this parcel.`);
+          alert(`⚠️ RECONCILIATION ANOMALY: Scanned waybill [${scannedWaybill}] was not found inside the loaded manifest elements!`);
         }
       }
     });
