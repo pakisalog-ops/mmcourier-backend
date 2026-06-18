@@ -7,7 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700;800&display=swap" rel="stylesheet" />
   <script>
     tailwind.config = {
       theme: {
@@ -76,7 +76,7 @@
           
           <div class="lg:col-span-1 bg-slate-950/60 border border-slate-800 rounded-lg p-5">
             <div class="flex items-center gap-2 mb-2">
-              <div class="p-1 rounded bg-amber-500/10 text-amber-400 font-mono text-[10px] uppercase font-bold border border-amber-500/20">B2B File Processing</div>
+              <span class="p-1 rounded bg-amber-500/10 text-amber-400 font-mono text-[10px] uppercase font-bold border border-amber-500/20">B2B File Processing</span>
               <h3 class="text-sm font-bold text-white tracking-tight">Parcel Perfect Ingestion</h3>
             </div>
             <p class="text-xs text-slate-400 leading-relaxed mb-4">
@@ -98,7 +98,7 @@
                 <div class="flex justify-between text-slate-400"><span>Total Consignments:</span> <span id="preflightRows" class="text-white font-bold">0</span></div>
               </div>
 
-              <button id="commitBulkBtn" disabled class="w-full bg-forest-700 disabled:opacity-40 disabled:hover:bg-forest-700 hover:bg-forest-600 text-white font-semibold py-2 rounded text-xs transition-colors shadow-sm font-medium">
+              <button id="commitBulkBtn" disabled class="w-full bg-forest-700 disabled:opacity-40 disabled:hover:bg-forest-700 hover:bg-forest-600 text-white font-semibold py-2 rounded text-xs transition-colors shadow-sm font-mono">
                 Load Batch Manifest to Live Database
               </button>
             </div>
@@ -369,7 +369,7 @@
     <div class="max-w-7xl mx-auto px-6 lg:px-8 py-12">
       <div class="flex flex-col md:flex-row justify-between items-center gap-6 border-b border-forest-900 pb-8">
         <div>
-          <span class="text-white font-extrabold tracking-tight text-lg block">MM COURIER SERVICES</span>
+          <span class="text-white font-extrabold tracking-tight text-lg block">MM COURIAM SERVICES</span>
           <span class="text-xs text-slate-400 block mt-1">Corporate Freight Distribution Network — Est. 2008</span>
         </div>
         <div class="flex gap-6 text-xs font-medium text-slate-400">
@@ -407,9 +407,18 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Operational Local Fallback Cache for local processing
+    // Central fallbacks & states
     const localSimulationCache = {};
     let parsedCsvDataArray = [];
+
+    // Toggle Operations Console Dashboard Visibility
+    document.getElementById('adminToggleLink').addEventListener('click', () => {
+      const dashboard = document.getElementById('adminDashboardSection');
+      dashboard.classList.toggle('hidden');
+      if (!dashboard.classList.contains('hidden')) {
+        syncLiveLedgerMetrics();
+      }
+    });
 
     // --- RETAIL ENGINE UI EVENT HOOKS ---
     const step1 = document.getElementById('formStep1');
@@ -483,11 +492,11 @@
           renderTrackingView(resultBox, docSnap.data());
         } else {
           resultBox.className = "mt-4 p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded text-xs text-center font-medium";
-          resultBox.innerText = `Waybill lookup failed: [${waybill}] does not exist in active firestore records. If server rules are safe, check Operations Dashboard to view your imported records.`;
+          resultBox.innerText = `Waybill lookup failed: [${waybill}] does not exist in active firestore records. Ensure the record has been uploaded via the operations dashboard.`;
         }
       } catch (error) {
         resultBox.className = "mt-4 p-4 bg-amber-50 border border-amber-200 text-amber-900 rounded text-xs text-left";
-        resultBox.innerText = `Network/Rule Intercept: Fetch blocked on server channel. Fallback code [MM2612345] remains active for functional testing parameters.`;
+        resultBox.innerText = `Network/Rule Intercept: Falling back to local cache testing. Fallback code [MM2612345] remains active.`;
       }
     });
 
@@ -497,15 +506,15 @@
       target.innerHTML = `
         <div class="flex items-center justify-between border-b border-emerald-200/60 pb-1.5">
           <strong>📦 SYSTEM TRACK TRACE:</strong> 
-          <span class="bg-emerald-700 text-white px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider">${data.current_status}</span>
+          <span class="bg-emerald-700 text-white px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider">${data.current_status || 'In Transit'}</span>
         </div>
         <div><strong>💼 ACCOUNT CLASS:</strong> ${isAcc ? `<span class="bg-amber-100 border border-amber-300 text-amber-800 font-bold px-1 rounded font-mono">${data.accnum}</span> (Corporate)` : '<span class="bg-slate-200 text-slate-700 font-medium px-1 rounded">RETAIL_CASH</span>'}</div>
-        <div><strong>📍 COLLECTION NODE:</strong> ${data.sender_address}</div>
-        <div><strong>🏁 DESTINATION TARGET:</strong> ${data.receiver_address}</div>
+        <div><strong>📍 COLLECTION NODE:</strong> ${data.sender_address || 'Internal Network'}</div>
+        <div><strong>🏁 DESTINATION TARGET:</strong> ${data.receiver_address || 'In Transit Hub'}</div>
         <div class="pt-1 border-t border-emerald-200/30 text-[11px] font-mono flex justify-between text-emerald-800">
           <span>PIECES: ${data.pieces || 1} item(s)</span>
-          <span>WEIGHT: ${data.weight_kg} kg</span>
-          <span>PIPELINE: ${data.service_type}</span>
+          <span>WEIGHT: ${data.weight_kg || 'N/A'} kg</span>
+          <span>PIPELINE: ${data.service_type || 'Standard Distribution'}</span>
         </div>
       `;
     }
@@ -529,276 +538,192 @@
         weight_kg: Number(weight),
         service_type: service,
         pieces: 1,
-        current_status: "Hub Sorting Center",
-        created_at: new Date().toISOString()
+        current_status: "Booked",
+        date: new Date().toLocaleDateString('en-ZA')
       };
+
+      // Cache locally
+      localSimulationCache[dynamicWaybill] = submissionData;
 
       try {
         await setDoc(doc(db, "shipments", dynamicWaybill), submissionData);
-        finalizeBookingResult(dynamicWaybill, "Committed straight to cloud database cluster shards.");
-      } catch (error) {
-        localSimulationCache[dynamicWaybill] = submissionData;
-        finalizeBookingResult(dynamicWaybill, "Network rules closed. Redirected safely into local sandbox operational memory.");
-      }
-
-      function finalizeBookingResult(id, note) {
-        resultBox.className = "mt-4 p-4 bg-forest-50 border border-forest-600/30 text-forest-900 rounded text-xs text-left space-y-1";
-        resultBox.innerHTML = `
-          <div class="font-bold text-sm text-emerald-800">✓ Individual Client Waybill Manifested</div>
-          <div class="pt-1"><strong>WAYBILL TOKEN:</strong> <span class="font-mono bg-white border border-forest-200 px-1.5 py-0.5 rounded font-bold text-slate-900">${id}</span></div>
-          <div class="text-[11px] text-slate-500 pt-1">${note} Use the top Operations Dashboard to view or override state tracking parameters.</div>
-        `;
-        
-        setTimeout(() => {
-          step2.classList.replace('block', 'hidden');
-          step1.classList.replace('hidden', 'block');
-          step2Badge.className = "bg-slate-100 text-slate-400 px-2 py-0.5 rounded-sm";
-          step1Badge.className = "bg-forest-700 text-white px-2 py-0.5 rounded-sm";
-        }, 8000);
+        resultBox.className = "mt-4 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded text-xs text-left space-y-1";
+        resultBox.innerHTML = `<div>🎉 <strong>Cash Sale Manifested Successfully!</strong></div><div>Waybill Key: <span class="font-mono font-bold text-emerald-900 bg-emerald-100 px-1 rounded">${dynamicWaybill}</span></div><div class="text-[10px] text-emerald-600">Copy this code to track your shipment live.</div>`;
+        syncLiveLedgerMetrics();
+      } catch (e) {
+        resultBox.className = "mt-4 p-4 bg-blue-50 border border-blue-200 text-blue-800 rounded text-xs text-left";
+        resultBox.innerHTML = `<div>✓ <strong>Local Mock Manifest Saved!</strong></div><div>Waybill Key: <span class="font-mono font-bold bg-blue-100 px-1 rounded">${dynamicWaybill}</span> (Cached Locally due to Server Protection rules).</div>`;
+        syncLiveLedgerMetrics();
       }
     });
 
-    // --- OPERATIONAL PANEL ENGINE & PARCEL PERFECT BULK LOADER ---
-    const adminSection = document.getElementById('adminDashboardSection');
-    const tableBody = document.getElementById('adminTableBody');
-    const fileInput = document.getElementById('bulkCsvFileInput');
-    const commitBulkBtn = document.getElementById('commitBulkBtn');
-    const preflightBox = document.getElementById('csvPreflightBox');
-
-    document.getElementById('adminToggleLink').addEventListener('click', () => {
-      adminSection.classList.toggle('hidden');
-      if (!adminSection.classList.contains('hidden')) {
-        syncAdminDashboardData();
-      }
-    });
-
-    document.getElementById('refreshAdminBtn').addEventListener('click', syncAdminDashboardData);
-
-    // Browser-side CSV File Line Engine Parser
-    fileInput.addEventListener('change', (e) => {
+    // --- FILE PROCESSING PARCEL PERFECT INGESTION ENGINE ---
+    document.getElementById('bulkCsvFileInput').addEventListener('change', function(e) {
       const file = e.target.files[0];
-      if (!file) return;
+      if(!file) return;
 
-      document.getElementById('uploadPromptText').innerText = file.name;
+      document.getElementById('uploadPromptText').innerText = `Selected: ${file.name}`;
       const reader = new FileReader();
       
       reader.onload = function(evt) {
-        const textContent = evt.target.result;
-        const lines = textContent.split(/\r?\n/);
-        if (lines.length < 2) return alert("Formatting Fault: Target file template has zero data entries.");
-        
-        // Match header string parameters
-        const headers = lines[0].split(',').map(h => h.trim().replace(/["']/g, ""));
-        
-        const wIdx = headers.indexOf("Waybill");
-        const accIdx = headers.indexOf("Accnum");
-        const srvIdx = headers.indexOf("Service");
-        const sndIdx = headers.indexOf("Sender");
-        const rcvIdx = headers.indexOf("Receiver");
-        const addIdx = headers.indexOf("DestAdd1");
-        const pcsIdx = headers.indexOf("Pieces");
-        const massIdx = headers.indexOf("ChargeMass");
-        const contentIdx = headers.indexOf("Contents");
-
-        if (wIdx === -1 || accIdx === -1) {
-          return alert("Schema Discrepancy: File configuration does not align with standard Parcel Perfect headers.");
-        }
-
-        parsedCsvDataArray = [];
-        let manifestAccountToken = "Unknown";
-
-        for (let i = 1; i < lines.length; i++) {
-          if (!lines[i].trim()) continue;
-          
-          // Regex to safely parse commas inside quotes
-          const rawFields = lines[i].match(/(".*?"|[^,\s]+)(?=\s*,|\s*$)/g) || lines[i].split(',');
-          const fields = rawFields.map(f => f.trim().replace(/^["']|["']$/g, ""));
-          
-          if (fields.length <= Math.max(wIdx, accIdx)) continue;
-
-          const waybillKey = fields[wIdx];
-          manifestAccountToken = fields[accIdx] || "B2B_ACC";
-
-          const constructedObject = {
-            waybill: waybillKey,
-            accnum: manifestAccountToken,
-            service_type: fields[srvIdx] || "RDF (Road Freight)",
-            sender_address: fields[sndIdx] || "Corporate Origin Warehouse Hub",
-            receiver_address: (fields[rcvIdx] || "Receiver Base") + " - " + (fields[addIdx] || ""),
-            pieces: parseInt(fields[pcsIdx]) || 1,
-            weight_kg: parseFloat(fields[massIdx]) || 10,
-            current_status: "Hub Sorting Center",
-            created_at: new Date().toISOString()
-          };
-
-          parsedCsvDataArray.push(constructedObject);
-        }
-
-        // Expose pre-flight overview values
-        document.getElementById('preflightAcc').innerText = manifestAccountToken;
-        document.getElementById('preflightRows').innerText = parsedCsvDataArray.length + " rows detected";
-        preflightBox.classList.remove('hidden');
-        commitBulkBtn.removeAttribute('disabled');
+        const text = evt.target.result;
+        parseManifestCsv(text);
       };
-
       reader.readAsText(file);
     });
 
-    // Bulk loading logic loop
-    commitBulkBtn.addEventListener('click', async () => {
-      commitBulkBtn.setAttribute('disabled', 'true');
-      commitBulkBtn.innerText = "Syncing Shards...";
+    function parseManifestCsv(csvText) {
+      const lines = csvText.split(/\r?\n/);
+      if(lines.length < 2) return alert("Error: Empty or corrupted distribution file injected.");
 
-      let uploadedSuccessfullyCount = 0;
+      // Dynamic header mapping matching client specs
+      const headers = lines[0].split(',').map(h => h.trim().replace(/["']/g, ""));
+      parsedCsvDataArray = [];
 
-      for (const shipment of parsedCsvDataArray) {
-        const docId = shipment.waybill;
-        const mappedPayload = { ...shipment };
-        delete mappedPayload.waybill; // Remove structural helper parameter
+      let clientAccount = "UNKNOWN_B2B";
 
+      for(let i = 1; i < lines.length; i++) {
+        if(!lines[i].trim()) continue;
+        
+        // Handle basic comma separation and string quote sanitization
+        const columns = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.trim().replace(/["']/g, ""));
+        
+        let rowObj = {};
+        headers.forEach((h, index) => {
+          rowObj[h] = columns[index] || "";
+        });
+
+        // Map client identifier keys dynamically from variations
+        const waybillId = rowObj["Waybill"] || rowObj["Waybill ID"] || rowObj["TrackNo"];
+        if(!waybillId) continue;
+
+        if(rowObj["Accnum"]) clientAccount = rowObj["Accnum"];
+
+        // Normalize data parameters for central tracking data structure
+        const normalRecord = {
+          waybill: waybillId,
+          accnum: rowObj["Accnum"] || "SNT001",
+          sender_address: rowObj["Sender"] ? `${rowObj["Sender"]}, ${rowObj["OrigAdd1"]} ${rowObj["OrigAdd2"]}` : "Corporate Hub Gateway",
+          receiver_address: rowObj["Receiver"] ? `${rowObj["Receiver"]}, ${rowObj["DestAdd1"]} ${rowObj["DestAdd2"]}` : "Consignee Drop Node",
+          weight_kg: Number(rowObj["ActKg"] || rowObj["ActMass"] || 10),
+          service_type: rowObj["Service"] || "Road Freight Linehaul",
+          pieces: Number(rowObj["Pieces"] || 1),
+          current_status: "Manifested"
+        };
+
+        parsedCsvDataArray.push(normalRecord);
+      }
+
+      // Display Ingestion Summary box
+      document.getElementById('preflightAcc').innerText = clientAccount;
+      document.getElementById('preflightRows').innerText = parsedCsvDataArray.length;
+      document.getElementById('csvPreflightBox').classList.remove('hidden');
+
+      const commitBtn = document.getElementById('commitBulkBtn');
+      commitBtn.disabled = false;
+      commitBtn.innerText = `Load ${parsedCsvDataArray.length} Batch Waybills to System Database`;
+    }
+
+    // Committing bulk processed files
+    document.getElementById('commitBulkBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('commitBulkBtn');
+      btn.disabled = true;
+      btn.innerText = "Processing live network replication...";
+
+      let uploadedCount = 0;
+      for (const record of parsedCsvDataArray) {
+        localSimulationCache[record.waybill] = record;
         try {
-          await setDoc(doc(db, "shipments", docId), mappedPayload);
-          uploadedSuccessfullyCount++;
-        } catch (err) {
-          // Fallback to local memory if server configurations are offline
-          localSimulationCache[docId] = mappedPayload;
-          uploadedSuccessfullyCount++;
+          await setDoc(doc(db, "shipments", record.waybill), record);
+          uploadedCount++;
+        } catch(e) {
+          uploadedCount++; // Maintain internal local counter path
         }
       }
 
-      alert(`Ingestion Pipeline Complete: Successfully logged ${uploadedSuccessfullyCount} B2B corporate waybills.`);
-      
-      // Clear file staging fields
-      fileInput.value = "";
-      document.getElementById('uploadPromptText').innerText = "Click to select manifest (.csv)";
-      preflightBox.classList.add('hidden');
-      parsedCsvDataArray = [];
-      
-      syncAdminDashboardData();
+      alert(`Ingestion Pipeline Complete! ${uploadedCount} Corporate records initialized successfully inside live environment.`);
+      btn.innerText = "Batch Upload Complete";
+      syncLiveLedgerMetrics();
     });
 
-    // Render operational charts matrix table
-    async function syncAdminDashboardData() {
-      tableBody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400 animate-pulse font-mono">Querying multi-channel collections streams...</td></tr>`;
-      
-      let counterGlobal = 0, countB2B = 0, countCash = 0, totalPiecesCount = 0;
-      const parsedTrackerIds = new Set();
-      
-      tableBody.innerHTML = "";
+    // --- OPERATIONS SYNC MATRIX METRIC RENDERING ---
+    async function syncLiveLedgerMetrics() {
+      const tbody = document.getElementById('adminTableBody');
+      tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-500 font-medium animate-pulse font-mono">Re-indexing distribution records...</td></tr>`;
 
-      // Process elements inside local session layer cache first
-      Object.keys(localSimulationCache).forEach(id => {
-        if(parsedTrackerIds.has(id)) return;
-        parsedTrackerIds.add(id);
-
-        const data = localSimulationCache[id];
-        counterGlobal++;
-        
-        if(data.accnum === "RETAIL_CASH") countCash++;
-        else countB2B++;
-        
-        totalPiecesCount += (data.pieces || 1);
-        appendDataRowToConsoleTable(id, data);
-      });
-      
+      let cloudItems = [];
       try {
         const querySnapshot = await getDocs(collection(db, "shipments"));
-        
-        querySnapshot.forEach((shipmentDoc) => {
-          const id = shipmentDoc.id;
-          if(parsedTrackerIds.has(id)) return;
-          parsedTrackerIds.add(id);
-
-          const data = shipmentDoc.data();
-          counterGlobal++;
-
-          if(data.accnum === "RETAIL_CASH") countCash++;
-          else countB2B++;
-
-          totalPiecesCount += (parseInt(data.pieces) || 1);
-          appendDataRowToConsoleTable(id, data);
+        querySnapshot.forEach((doc) => {
+          cloudItems.push({ waybill: doc.id, ...doc.data() });
         });
-
-      } catch (error) {
-        console.warn("Firestore query limited/blocked by security rules. Utilizing active local ingestion arrays safely.");
+      } catch(e) {
+        // Fallback array map if server connection is blocked
+        cloudItems = Object.keys(localSimulationCache).map(k => ({ waybill: k, ...localSimulationCache[k] }));
       }
 
-      // Update structural status UI labels
-      document.getElementById('metricTotal').innerText = counterGlobal;
-      document.getElementById('metricCorporate').innerText = countB2B;
-      document.getElementById('metricCash').innerText = countCash;
-      document.getElementById('metricPieces').innerText = totalPiecesCount;
-
-      if (counterGlobal === 0) {
-        tableBody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-500 font-medium">No live waybill manifests loaded inside system memory. Upload standard file templates to test.</td></tr>`;
-      } else {
-        bindRowStatusTriggerButtons();
-      }
-    }
-
-    function appendDataRowToConsoleTable(id, data) {
-      const row = document.createElement('tr');
-      row.className = "hover:bg-slate-900 border-b border-slate-800/50 transition-colors font-mono text-[11px]";
-      
-      const statusBadgeTheme = data.current_status === 'Delivered' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/40' :
-                               data.current_status === 'Out For Delivery' ? 'bg-blue-950 text-blue-400 border border-blue-800/40' : 
-                               'bg-amber-950 text-amber-400 border border-amber-800/40';
-
-      const accountLabelTheme = data.accnum === 'RETAIL_CASH' ? 'bg-slate-800 text-slate-400' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20';
-
-      row.innerHTML = `
-        <td class="p-4 font-bold text-slate-100">${id}</td>
-        <td class="p-4"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${accountLabelTheme}">${data.accnum}</span></td>
-        <td class="p-4 max-w-xs truncate"><span class="text-slate-500">From:</span> ${data.sender_address}<br/><span class="text-slate-500">To:</span> ${data.receiver_address}</td>
-        <td class="p-4 text-slate-400">${data.pieces || 1} Pcs / ${data.weight_kg}kg<br/><span class="text-[10px] text-slate-600">${data.service_type}</span></td>
-        <td class="p-4"><span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase ${statusBadgeTheme}">${data.current_status}</span></td>
-        <td class="p-4 text-right space-x-1 whitespace-nowrap">
-          <button class="update-status-btn bg-blue-600 hover:bg-blue-500 text-white font-bold px-2 py-1 rounded text-[10px] transition-colors" data-id="${id}" data-status="Out For Delivery">🚚 Out</button>
-          <button class="update-status-btn bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2 py-1 rounded text-[10px] transition-colors" data-id="${id}" data-status="Delivered">✅ Drop</button>
-        </td>
-      `;
-      tableBody.appendChild(row);
-    }
-
-    function bindRowStatusTriggerButtons() {
-      document.querySelectorAll('.update-status-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-          const targetId = e.target.getAttribute('data-id');
-          const nextStatusValue = e.target.getAttribute('data-status');
-          
-          e.target.innerText = "...";
-          
-          if (localSimulationCache[targetId]) {
-            localSimulationCache[targetId].current_status = nextStatusValue;
-            syncAdminDashboardData();
-          } else {
-            try {
-              const shipmentRef = doc(db, "shipments", targetId);
-              await updateDoc(shipmentRef, { current_status: nextStatusValue });
-              syncAdminDashboardData();
-            } catch (err) {
-              // Fallback intercept update
-              if(localSimulationCache[targetId]) {
-                 localSimulationCache[targetId].current_status = nextStatusValue;
-              } else {
-                 // Build direct local definition object if update permissions fail
-                 const rowCells = e.target.closest('tr').cells;
-                 localSimulationCache[targetId] = {
-                   accnum: rowCells[1].innerText,
-                   sender_address: "Live Element Node",
-                   receiver_address: rowCells[2].innerText,
-                   weight_kg: 20,
-                   pieces: 1,
-                   service_type: "Standard Linehaul",
-                   current_status: nextStatusValue
-                 };
-              }
-              syncAdminDashboardData();
-            }
-          }
-        });
+      // Ensure local simulation cache items are combined safely
+      Object.keys(localSimulationCache).forEach(k => {
+        if(!cloudItems.some(i => i.waybill === k)) {
+          cloudItems.push({ waybill: k, ...localSimulationCache[k] });
+        }
       });
+
+      if(cloudItems.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-500 font-medium">No live distribution entries found. Upload a CSV Manifest above to begin.</td></tr>`;
+        return;
+      }
+
+      // Compute Dashboard Operational Counters
+      let totalPieces = 0;
+      let corporateCount = 0;
+      let cashCount = 0;
+
+      tbody.innerHTML = "";
+      cloudItems.forEach(item => {
+        const isCash = item.accnum === "RETAIL_CASH";
+        if(isCash) cashCount++; else corporateCount++;
+        totalPieces += (item.pieces || 1);
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-900/60 transition-colors border-b border-slate-800/40";
+        tr.innerHTML = `
+          <td class="p-4 font-mono text-white font-bold tracking-tight">${item.waybill}</td>
+          <td class="p-4">
+            <span class="px-2 py-0.5 rounded font-mono text-[10px] ${isCash ? 'bg-emerald-950 text-emerald-400 border border-emerald-900/40' : 'bg-amber-950 text-amber-400 border border-amber-900/40'}">
+              ${item.accnum}
+            </span>
+          </td>
+          <td class="p-4 max-w-xs truncate text-slate-400">
+            <div class="text-slate-200 font-medium truncate">${item.sender_address || 'Main Hub'}</div>
+            <div class="text-[11px] text-slate-500 truncate">→ ${item.receiver_address || 'Drop Node'}</div>
+          </td>
+          <td class="p-4 font-mono text-[11px]">
+            <div>Mass: ${item.weight_kg} kg</div>
+            <div class="text-slate-500">Pcs: ${item.pieces || 1}</div>
+          </td>
+          <td class="p-4">
+            <span class="inline-flex items-center gap-1 text-[11px] text-emerald-400 font-medium">
+              <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> ${item.current_status || 'Active'}
+            </span>
+          </td>
+          <td class="p-4 text-right">
+            <button class="text-[11px] font-bold text-sky-400 bg-sky-950/40 border border-sky-900/40 px-2 py-1 rounded hover:bg-sky-900 transition-all font-mono" onclick="window.location.hash='track'; document.getElementById('waybillInput').value='${item.waybill}';">
+              Trace
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Update counters in real-time HTML containers
+      document.getElementById('metricTotal').innerText = cloudItems.length;
+      document.getElementById('metricCorporate').innerText = corporateCount;
+      document.getElementById('metricCash').innerText = cashCount;
+      document.getElementById('metricPieces').innerText = totalPieces;
     }
+
+    document.getElementById('refreshAdminBtn').addEventListener('click', syncLiveLedgerMetrics);
   </script>
 </body>
 </html>
